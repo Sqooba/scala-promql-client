@@ -57,9 +57,13 @@ object RangeQuery {
 
     @tailrec
     def splitIntervals(acc: Seq[RangeQuery], curr: RangeQuery): Seq[RangeQuery] =
-      if (curr.start.getEpochSecond >= end) { acc }
-      else if (curr.end.getEpochSecond >= end) { acc :+ curr.copy(end = query.end) }
-      else { splitIntervals(acc :+ curr, curr.shift(samplingTime)) }
+      if (curr.start.getEpochSecond >= end) {
+        acc
+      } else if (curr.end.getEpochSecond >= end) {
+        acc :+ curr.copy(end = query.end)
+      } else {
+        splitIntervals(acc :+ curr, curr.shift(samplingTime))
+      }
     splitIntervals(Seq(), query.withDuration(samplingTime)).toList
   }
 }

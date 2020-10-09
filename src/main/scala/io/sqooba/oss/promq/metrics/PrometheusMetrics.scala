@@ -40,6 +40,7 @@ object PrometheusMetrics {
   // scalastyle:off
   import io.circe.generic.semiauto._
   // scalastyle:on
+
   /**
    * We need to flatten the `tags` key inside the JSON of MetricHeaders
    */

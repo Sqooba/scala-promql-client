@@ -71,6 +71,7 @@ object ResponseData {
   // scalastyle:off
   import metrics.PrometheusMetrics._
   // scalastyle:on
+
   /**
    * The response need to be decoded with respect to the `resultType` field of the received JSON
    * This field will describe the kind of results that will be contained in the response
@@ -141,9 +142,9 @@ object PrometheusResponse {
       .downField("status")
       .as[String]
       .flatMap {
-        case "success" => Right(Decoder[SuccessResponse].widen)
-        case "error"   => Right(Decoder[ErrorResponse].widen)
-        case status: String    => Left(DecodingFailure(f"Unable to find decoder for status $status.", Nil))
+        case "success"      => Right(Decoder[SuccessResponse].widen)
+        case "error"        => Right(Decoder[ErrorResponse].widen)
+        case status: String => Left(DecodingFailure(f"Unable to find decoder for status $status.", Nil))
       }
     responseDecoder.flatMap(_.apply(h))
   }

@@ -12,6 +12,7 @@ import io.circe.Decoder
 case class PrometheusInsertMetric(metric: MetricHeaders, values: Seq[Double], timestamps: Seq[Long])
 
 object PrometheusInsertMetric {
+
   // scalastyle:off
   import PrometheusMetrics._
   // scalastyle:on
