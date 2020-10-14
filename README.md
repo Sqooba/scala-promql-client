@@ -10,3 +10,5 @@ This library is relied on in contexts where we use a Prometheus instance as a ti
 and wish to run queries for analytical purposes from a Scala application.
 
 It is in a draft state at the moment: we will avoid deep API changes if possible, but can't exclude them.
+
+See the [changelog](CHANGELOG.md) for more details.
