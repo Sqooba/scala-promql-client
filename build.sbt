@@ -75,7 +75,7 @@ lazy val commonSettings =
     name := "scala-prom-client",
     organization := "io.sqooba.oss",
     organizationName := "Sqooba",
-    homepage := Some(url("https://github.com/Sqooba/scala-prom-client/")),
+    homepage := Some(url("https://github.com/Sqooba/scala-promql-client/")),
     licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     publishMavenStyle := true,
     publishArtifact in Test := false,
@@ -89,8 +89,8 @@ lazy val commonSettings =
     },
     scmInfo := Some(
       ScmInfo(
-        url("https://github.com/Sqooba/scala-prom-client.git"),
-        "scm:git:git@github.com:Sqooba/scala-prom-client.git"
+        url("https://github.com/Sqooba/scala-promql-client.git"),
+        "scm:git:git@github.com:Sqooba/scala-promql-client.git"
       )
     ),
     developers := List(
