@@ -32,10 +32,22 @@ object PrometheusClientConfig {
       config.getInt("parallelRequests")
     )
 
+  def fromKebabCase(config: Config): PrometheusClientConfig =
+    PrometheusClientConfig(
+      config.getString("host"),
+      config.getInt("port"),
+      config.getInt("max-points-per-timeseries"),
+      config.getInt("retry-number"),
+      config.getInt("parallel-requests")
+    )
+
   /**
    * Create a layer containing a [[PrometheusClientConfig]]. This config is build from a
    * typesafe config
    */
   val layer: ZLayer[Has[Config], Nothing, Has[PrometheusClientConfig]] =
     ZLayer.fromFunction[Has[Config], PrometheusClientConfig](config => from(config.get))
+
+  val layerKebabCaseConfig: ZLayer[Has[Config], Nothing, Has[PrometheusClientConfig]] =
+    ZLayer.fromFunction[Has[Config], PrometheusClientConfig](config => fromKebabCase(config.get))
 }
