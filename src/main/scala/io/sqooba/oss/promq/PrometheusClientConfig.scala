@@ -1,6 +1,8 @@
 package io.sqooba.oss.promq
 
 import com.typesafe.config.Config
+import zio.ZLayer
+import zio.Has
 
 /**
  * @param host  server's hostname or ip
@@ -29,4 +31,11 @@ object PrometheusClientConfig {
       config.getInt("retryNumber"),
       config.getInt("parallelRequests")
     )
+
+  /**
+   * Create a layer containing a [[PrometheusClientConfig]]. This config is build from a
+   * typesafe config
+   */
+  val layer: ZLayer[Has[Config], Nothing, Has[PrometheusClientConfig]] =
+    ZLayer.fromFunction[Has[Config], PrometheusClientConfig](config => from(config.get))
 }

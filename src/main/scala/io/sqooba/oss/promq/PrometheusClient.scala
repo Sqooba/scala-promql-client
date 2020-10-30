@@ -5,12 +5,13 @@ import io.circe.syntax.EncoderOps
 import sttp.client._
 import sttp.client.circe._
 import metrics._
-import sttp.client.asynchttpclient.WebSocketHandler
 import io.circe.parser.decode
 import PrometheusInsertMetric._
 import java.time.Instant
 
 import zio._
+import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
+import sttp.client.asynchttpclient.zio.SttpClient
 
 /**
  * This is a "low level" prometheus client, it can be used to communicate with
@@ -29,8 +30,9 @@ import zio._
 // scalastyle:off
 class PrometheusClient(
   config: PrometheusClientConfig,
-  backend: SttpBackend[Task, Nothing, WebSocketHandler]
-) extends LazyLogging {
+  client: SttpClient
+) extends PrometheusService.Service
+    with LazyLogging {
 
   private val endpoint = uri"http://${config.host}:${config.port}"
   logger.info(s"Sending to endpoint $endpoint")
@@ -51,7 +53,7 @@ class PrometheusClient(
       .body(toPost)
       .post(importEndpoint)
 
-    backend
+    SttpClient
       .send(request)
       .refineOrDie {
         case e: Throwable => PrometheusClientError(s"[put] Something went wrong ${e.getLocalizedMessage}")
@@ -63,6 +65,7 @@ class PrometheusClient(
           IO.fail(PrometheusClientError(f"Unable to insert points [${resp.code}]: ${resp.statusText}"))
         }
       )
+      .provide(client)
   }
 
   /**
@@ -132,13 +135,14 @@ class PrometheusClient(
 
     val request = basicRequest.get(exportEndpoint)
 
-    backend
+    SttpClient
       .send(request)
       .refineOrDie {
         case e: Throwable =>
           PrometheusClientError(s"[export] Something went wrong ${e.getLocalizedMessage}")
       }
       .flatMap(resp => decodeBody(resp))
+      .provide(client)
   }
 
   private def executeInstantQuery(promQuery: InstantQuery): IO[PrometheusError, ResponseData] = {
@@ -149,7 +153,7 @@ class PrometheusClient(
       .post(httpQueryEndpoint)
       .response(asJson[PrometheusResponse])
 
-    val response = backend.send(httpQuery)
+    val response = SttpClient.send(httpQuery).provide(client)
     handleQueryError(response)
   }
 
@@ -163,7 +167,7 @@ class PrometheusClient(
       .post(queryEndpoint)
       .response(asJson[PrometheusResponse])
 
-    val response = backend.send(httpQuery)
+    val response = SttpClient.send(httpQuery).provide(client)
     handleQueryError(response)
   }
 
@@ -186,4 +190,22 @@ class PrometheusClient(
           }
         )
       )
+}
+
+object PrometheusClient {
+  def live(
+    config: PrometheusClientConfig,
+    client: SttpClient
+  ): Layer[Nothing, Has[PrometheusService.Service]] = ZLayer.succeed(new PrometheusClient(config, client))
+
+  val y = AsyncHttpClientZioBackend.layer()
+  def live: URLayer[Has[PrometheusClientConfig] with SttpClient, Has[
+    PrometheusService.Service
+  ]] =
+    ZLayer
+      .fromServiceM[PrometheusClientConfig, SttpClient, Nothing, PrometheusService.Service] { config =>
+        ZIO.fromFunction[SttpClient, PrometheusService.Service] { client =>
+          new PrometheusClient(config, client)
+        }
+      }
 }
