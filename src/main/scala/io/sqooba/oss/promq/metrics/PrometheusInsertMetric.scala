@@ -9,13 +9,9 @@ import io.circe.Decoder
  * the same as the one returned by the query and query_range endpoint
  * This class is taking care of representing the import/export structure as well as its serialization
  */
-case class PrometheusInsertMetric(metric: MetricHeaders, values: Seq[Double], timestamps: Seq[Long])
+case class PrometheusInsertMetric(metric: Map[String, String], values: Seq[Double], timestamps: Seq[Long])
 
 object PrometheusInsertMetric {
-
-  // scalastyle:off
-  import PrometheusMetrics._
-  // scalastyle:on
 
   // We need that in order for the custom encoder of MetricHeaders to be used by Circe
   implicit val encodeInsertMetric: Encoder[PrometheusInsertMetric] = deriveEncoder[PrometheusInsertMetric]

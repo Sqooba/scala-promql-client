@@ -52,17 +52,17 @@ case class MatrixResponseData(result: List[MatrixMetric]) extends ResponseData {
 /**
  * This class will contains a list a single pairs (timestamp, value) for the queried metrics
  */
-case class VectorResponseData(result: List[VectorMetric]) extends ResponseData
+final case class VectorResponseData(result: List[VectorMetric]) extends ResponseData
 
 /**
  * Represents a single datapoint (with no headers) with a numeric value
  */
-case class ScalarResponseData(result: (Instant, Double)) extends ResponseData
+final case class ScalarResponseData(result: (Instant, Double)) extends ResponseData
 
 /**
  * Represents a single datapoint (with no headers) with a string value
  */
-case class StringResponseData(result: (Instant, String)) extends ResponseData
+final case class StringResponseData(result: (Instant, String)) extends ResponseData
 
 object ResponseData {
 

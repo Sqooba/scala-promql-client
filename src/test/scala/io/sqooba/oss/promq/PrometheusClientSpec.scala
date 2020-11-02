@@ -6,7 +6,7 @@ import PrometheusTestUtils._
 import sttp.client.{ Response, StringBody }
 import java.time.Instant
 
-import io.sqooba.oss.promq.metrics.{ MatrixMetric, MetricHeaders, PrometheusInsertMetric }
+import io.sqooba.oss.promq.metrics.{ MatrixMetric, PrometheusInsertMetric }
 import org.scalatest.Assertions.fail
 import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
 import sttp.model.StatusCode
@@ -41,7 +41,7 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
       },
       testM("correctly send the serialized data") {
         val customSequence = emptySequence
-          .map(point => point.copy(metric = point.metric.copy(tags = Map("customtag" -> "value"))))
+          .map(point => point.copy(metric = Map("customtag" -> "value")))
 
         val scenario = for {
           _ <- whenRequestMatches(req =>
@@ -53,7 +53,7 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
                        case (point, idx) =>
                          val decoded = decode[PrometheusInsertMetric](point).toOption.get
                          decoded == customSequence(idx) &&
-                         decoded.metric.tags("customtag") == "value"
+                         decoded.metric("customtag") == "value"
                      }
                    case _ => false
                  }
@@ -206,7 +206,7 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
             MatrixResponseData(
               List(
                 MatrixMetric(
-                  MetricHeaders("WGRI_W_10m_Avg", "", "", Map("t_id" -> "115")),
+                  Map("__name__" -> "WGRI_W_10m_Avg", "t_id" -> "115"),
                   List(
                     (start, "1"),
                     (start.plusSeconds(stepSeconds), "2"),

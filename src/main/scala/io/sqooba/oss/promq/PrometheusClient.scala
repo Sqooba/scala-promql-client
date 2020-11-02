@@ -181,6 +181,7 @@ class PrometheusClient(
         _.body.fold(
           error =>
             IO.fail(
+              // There is no easy way to log the raw response from the client, it should be easier in sttp 3 (https://github.com/softwaremill/sttp/issues/190)
               PrometheusClientError(f"Unable to execute query: ${error.getLocalizedMessage}")
             ),
           {

@@ -45,13 +45,49 @@ object PrometheusResponseSpec extends DefaultRunnableSpec {
                   hasFirst(
                     equalTo(
                       VectorMetric(
-                        MetricHeaders("up", "prometheus", "testInstance"),
+                        Map("job" -> "prometheus", "instance" -> "testInstance", "__name__" -> "up"),
                         (Instant.ofEpochSecond(1337), "1")
                       )
                     )
                   ) &&
                     hasSize(equalTo(1))
                 )
+              )
+            )
+          )
+        )
+      )
+    },
+    test("decode a vector with empty metric") {
+      val json            = Source.fromResource("responses/PrometheusResponseSuccessEmptyVector").mkString
+      val decodedResponse = decode[PrometheusResponse](json)
+
+      assert(decodedResponse)(
+        isRight(
+          isSubtype[SuccessResponse](
+            hasField(
+              "data",
+              _.data,
+              isSubtype[VectorResponseData](
+                equalTo(VectorResponseData(List(VectorMetric(Map(), (Instant.ofEpochSecond(1337), "445100")))))
+              )
+            )
+          )
+        )
+      )
+    },
+    test("decode a vector without any metric") {
+      val json            = Source.fromResource("responses/PrometheusResponseNoMetric").mkString
+      val decodedResponse = decode[PrometheusResponse](json)
+
+      assert(decodedResponse)(
+        isRight(
+          isSubtype[SuccessResponse](
+            hasField(
+              "data",
+              _.data,
+              isSubtype[VectorResponseData](
+                equalTo(VectorResponseData(List(VectorMetric(Map(), (Instant.ofEpochSecond(1337), "445100")))))
               )
             )
           )
@@ -113,11 +149,12 @@ object PrometheusResponseSpec extends DefaultRunnableSpec {
                       "metric",
                       (m: MatrixMetric) => m.metric,
                       equalTo(
-                        MetricHeaders(
-                          "WGRI_W_10m_Avg",
-                          "TimeSeriesDatabaseSink",
-                          "VMLoader",
-                          Map("id" -> "122", "entityType" -> "t")
+                        Map(
+                          "__name__"   -> "WGRI_W_10m_Avg",
+                          "id"         -> "122",
+                          "entityType" -> "t",
+                          "instance"   -> "VMLoader",
+                          "job"        -> "TimeSeriesDatabaseSink"
                         )
                       )
                     )
@@ -156,12 +193,7 @@ object PrometheusResponseSpec extends DefaultRunnableSpec {
       val firstResponse = MatrixResponseData(
         List(
           MatrixMetric(
-            MetricHeaders(
-              "WGRI_W_10m_Avg",
-              "TimeSeriesDatabaseSink",
-              "VMLoader",
-              Map("id" -> "122", "entityType" -> "t")
-            ),
+            Map("__name__" -> "WGRI_W_10m_Avg", "id" -> "122", "entityType" -> "t"),
             List((Instant.ofEpochMilli(0), "150"))
           )
         )
@@ -169,12 +201,7 @@ object PrometheusResponseSpec extends DefaultRunnableSpec {
       val secondResponse = MatrixResponseData(
         List(
           MatrixMetric(
-            MetricHeaders(
-              "WGRI_W_10m_Avg",
-              "TimeSeriesDatabaseSink",
-              "VMLoader",
-              Map("id" -> "122", "entityType" -> "t")
-            ),
+            Map("__name__" -> "WGRI_W_10m_Avg", "id" -> "122", "entityType" -> "t"),
             List((Instant.ofEpochMilli(10000), "1000"))
           )
         )
@@ -194,12 +221,7 @@ object PrometheusResponseSpec extends DefaultRunnableSpec {
       val firstResponse = MatrixResponseData(
         List(
           MatrixMetric(
-            MetricHeaders(
-              "WGRI_W_10m_Avg",
-              "TimeSeriesDatabaseSink",
-              "VMLoader",
-              Map("id" -> "122", "entityType" -> "t")
-            ),
+            Map("__name__" -> "WGRI_W_10m_Avg", "id" -> "122", "entityType" -> "t"),
             List((Instant.ofEpochMilli(0), "150"))
           )
         )
@@ -207,12 +229,7 @@ object PrometheusResponseSpec extends DefaultRunnableSpec {
       val secondResponse = MatrixResponseData(
         List(
           MatrixMetric(
-            MetricHeaders(
-              "WGRI_W_10m_Avg",
-              "TimeSeriesDatabaseSink",
-              "VMLoader",
-              Map("id" -> "122", "entityType" -> "t")
-            ),
+            Map("__name__" -> "WGRI_W_10m_Avg", "id" -> "122", "entityType" -> "t"),
             List((Instant.ofEpochMilli(0), "150"), (Instant.ofEpochMilli(10000), "1000"))
           )
         )

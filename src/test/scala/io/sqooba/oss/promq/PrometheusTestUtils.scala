@@ -10,11 +10,7 @@ object PrometheusTestUtils {
 
   def createInsertPoint(values: Seq[Double] = Seq(), ts: Seq[Long] = Seq()): PrometheusInsertMetric =
     PrometheusInsertMetric(
-      MetricHeaders(
-        "Test_Series",
-        "job",
-        "testInstance"
-      ),
+      Map("__name__" -> "Test_Series"),
       values = values,
       timestamps = ts
     )
@@ -24,7 +20,7 @@ object PrometheusTestUtils {
       MatrixResponseData(
         List(
           MatrixMetric(
-            MetricHeaders("WGRI_W_10m_Avg", "", "", Map("t_id" -> "115")),
+            Map("__name__" -> "WGRI_W_10m_Avg", "t_id" -> "115"),
             values.zipWithIndex.map {
               case (value, idx) => (start.plusSeconds(idx * step.toSeconds), value)
             }.toList
