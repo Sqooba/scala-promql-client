@@ -22,7 +22,7 @@ sealed trait ResponseData
  * A class to represent the results of a range_query to VictoriaMetrics
  * It will contains a sequence of metrics, associated with their headers (name and tag)
  */
-case class MatrixResponseData(result: List[MatrixMetric]) extends ResponseData {
+final case class MatrixResponseData(result: List[MatrixMetric]) extends ResponseData {
 
   /**
    * Here we have a specific case to handle. When we split queries, the last point of one query might be the same (will be)
@@ -70,6 +70,7 @@ object ResponseData {
   // by circe's decoding.
   // scalastyle:off
   import metrics.PrometheusMetrics._
+  import metrics.Scalar._
   // scalastyle:on
 
   /**

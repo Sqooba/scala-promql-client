@@ -15,7 +15,7 @@ import scala.concurrent.duration.DurationInt
 
 object PrometheusResponseSpec extends DefaultRunnableSpec {
 
-  val spec = suite("PrometheusRespone decoder")(
+  val spec = suite("PrometheusResponse decoder")(
     test("detect an error response") {
       val json            = Source.fromResource("responses/PrometheusResponseError").mkString
       val decodedResponse = decode[PrometheusResponse](json)
@@ -88,24 +88,6 @@ object PrometheusResponseSpec extends DefaultRunnableSpec {
               _.data,
               isSubtype[VectorResponseData](
                 equalTo(VectorResponseData(List(VectorMetric(Map(), (Instant.ofEpochSecond(1337), "445100")))))
-              )
-            )
-          )
-        )
-      )
-    },
-    test("decode a scalar response") {
-      val json            = Source.fromResource("responses/PrometheusResponseSuccessScalar").mkString
-      val decodedResponse = decode[PrometheusResponse](json)
-
-      assert(decodedResponse)(
-        isRight(
-          isSubtype[SuccessResponse](
-            hasField(
-              "data",
-              _.data,
-              isSubtype[ScalarResponseData](
-                equalTo(ScalarResponseData((Instant.ofEpochSecond(1337), 28d)))
               )
             )
           )
