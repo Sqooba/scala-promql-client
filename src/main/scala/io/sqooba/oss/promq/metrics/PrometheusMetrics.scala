@@ -1,17 +1,17 @@
 package io.sqooba.oss.promq.metrics
 
 import java.time.Instant
-import scala.util.Try
 import io.circe.Decoder
 import io.circe.HCursor
+import scala.util.Try
 
 final case class MatrixMetric(metric: Map[String, String], values: List[(Instant, String)])
 final case class VectorMetric(metric: Map[String, String], value: (Instant, String))
 
 object PrometheusMetrics {
-  // Prometheus is cutting the timestamp at the second, not ms
-  implicit val secondInstantDecode: Decoder[Instant] = Decoder.decodeLong.emapTry { value =>
-    Try(Instant.ofEpochSecond(value))
+
+  implicit val msInstantDecode: Decoder[Instant] = Decoder.decodeDouble.emapTry { value =>
+    Try(Instant.ofEpochMilli((value * 1000).toLong))
   }
 
   // This decoder is required because the `metric` field might be empty.

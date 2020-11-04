@@ -94,6 +94,24 @@ object PrometheusResponseSpec extends DefaultRunnableSpec {
         )
       )
     },
+    test("decode a vector with timestamps containing ms") {
+      val json            = Source.fromResource("responses/PrometheusResponseMs").mkString
+      val decodedResponse = decode[PrometheusResponse](json)
+
+      assert(decodedResponse)(
+        isRight(
+          isSubtype[SuccessResponse](
+            hasField(
+              "data",
+              _.data,
+              isSubtype[VectorResponseData](
+                equalTo(VectorResponseData(List(VectorMetric(Map(), (Instant.ofEpochMilli(1602511200123L), "100000")))))
+              )
+            )
+          )
+        )
+      )
+    },
     test("decode a string response") {
       val json            = Source.fromResource("responses/PrometheusResponseSuccessString").mkString
       val decodedResponse = decode[PrometheusResponse](json)
