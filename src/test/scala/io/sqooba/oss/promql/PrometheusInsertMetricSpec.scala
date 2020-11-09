@@ -1,9 +1,9 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 import io.circe.syntax._
 import io.circe.parser.decode
 import PrometheusTestUtils._
-import io.sqooba.oss.promq.metrics.PrometheusInsertMetric
+import io.sqooba.oss.promql.metrics.PrometheusInsertMetric
 import zio.test.Assertion.{ equalTo, hasField, isSome }
 import zio.test._
 

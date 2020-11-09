@@ -1,4 +1,4 @@
-package io.sqooba.oss.promq.metrics
+package io.sqooba.oss.promql.metrics
 
 import io.circe.Encoder
 import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }

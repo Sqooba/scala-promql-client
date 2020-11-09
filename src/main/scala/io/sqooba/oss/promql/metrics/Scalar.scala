@@ -1,4 +1,4 @@
-package io.sqooba.oss.promq.metrics
+package io.sqooba.oss.promql.metrics
 
 import java.lang.Long
 import io.circe.{ Decoder, DecodingFailure }

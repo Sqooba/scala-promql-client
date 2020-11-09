@@ -1,8 +1,8 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 import java.time.Instant
 
-import io.sqooba.oss.promq.metrics._
+import io.sqooba.oss.promql.metrics._
 
 import scala.concurrent.duration.FiniteDuration
 

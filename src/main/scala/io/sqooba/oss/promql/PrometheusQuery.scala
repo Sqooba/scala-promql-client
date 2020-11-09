@@ -1,4 +1,4 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 import java.time.Instant
 
@@ -50,7 +50,7 @@ object RangeQuery {
    */
   val MAX_SAMPLING: Int = 4 - 1
 
-  private[promq] def splitRangeQuery(query: RangeQuery, maxSample: Int = MAX_SAMPLING): List[RangeQuery] = {
+  private[promql] def splitRangeQuery(query: RangeQuery, maxSample: Int = MAX_SAMPLING): List[RangeQuery] = {
     val step         = query.step // in second
     val end          = query.end.getEpochSecond
     val samplingTime = (step * maxSample).seconds

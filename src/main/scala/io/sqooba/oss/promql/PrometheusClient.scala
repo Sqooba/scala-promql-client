@@ -1,4 +1,4 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.syntax.EncoderOps

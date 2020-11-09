@@ -1,4 +1,4 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 /**
  * The goal is to have a single trait as supertype for all our error

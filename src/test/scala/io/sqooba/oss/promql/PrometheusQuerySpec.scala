@@ -1,4 +1,4 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 import java.time.Instant
 

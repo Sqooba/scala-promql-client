@@ -1,7 +1,7 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 import zio._
-import io.sqooba.oss.promq.metrics.PrometheusInsertMetric
+import io.sqooba.oss.promql.metrics.PrometheusInsertMetric
 import java.time.Instant
 
 /**
@@ -31,7 +31,7 @@ object PrometheusService {
   /**
    * Insert points into Prometheus
    *
-   * @param dataPoints A collection of [[io.sqooba.oss.promq.metrics.PrometheusInsertMetric]] to insert
+   * @param dataPoints A collection of [[io.sqooba.oss.promql.metrics.PrometheusInsertMetric]] to insert
    * @return An effect resulting in an Int, containing the number of points successfully inserted.
    *
    *         A failed effect, if an exception occured when connecting to the target host or when writing the
@@ -61,7 +61,7 @@ object PrometheusService {
    * @param query A raw PromQL query
    * @param from An optional start date for the export
    * @param to An optional end date for the export
-   * @return An effect resulting in a sequence of [[io.sqooba.oss.promq.metrics.PrometheusInsertMetric]], containing the data returned by export
+   * @return An effect resulting in a sequence of [[io.sqooba.oss.promql.metrics.PrometheusInsertMetric]], containing the data returned by export
    *
    *         A failed effect, if an exception occured when connecting to the target host or when running the
    *         query on the backend, the expected errors will be converted to a type of [[PrometheusClientError]].

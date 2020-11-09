@@ -18,9 +18,8 @@ lazy val root =
         library.scalaLogging,
         library.typesafeConfig,
         library.zio        % Provided,
-        library.zioTest % Test,
-        library.zioTestSbt % Test,
-        library.scalaTest % Test
+        library.zioTest    % Test,
+        library.zioTestSbt % Test
       ),
       publishArtifact := true,
       testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
@@ -36,28 +35,25 @@ lazy val library =
   new {
 
     object Version {
-      val zio = "1.0.3"
-      val sttp = "2.2.8"
-      val circe = "0.13.0"
-      val scalaTest = "3.0.8"
-      val scalaLogging = "3.9.2"
+      val zio            = "1.0.3"
+      val sttp           = "2.2.8"
+      val circe          = "0.13.0"
+      val scalaLogging   = "3.9.2"
       val typesafeConfig = "1.4.0"
     }
 
-    val zio        = "dev.zio"       %% "zio"          % Version.zio
-    val zioTest    = "dev.zio" %% "zio-test"     % Version.zio
-    val zioTestSbt = "dev.zio" %% "zio-test-sbt" % Version.zio
-    val sttpCore = "com.softwaremill.sttp.client" %% "core" % Version.sttp
-    val sttpCirce = "com.softwaremill.sttp.client" %% "circe" % Version.sttp
-    val sttpZioClient = "com.softwaremill.sttp.client" %% "async-http-client-backend-zio" % Version.sttp
-    val circeCore = "io.circe" %% "circe-core" % Version.circe
-    val circeGeneric = "io.circe" %% "circe-generic" % Version.circe
-    val circeParser = "io.circe" %% "circe-parser" % Version.circe
-    val circeOptics = "io.circe" %% "circe-optics" % Version.circe
-    val scalaTest = "org.scalatest" %% "scalatest" % Version.scalaTest
-    // Check if this is required for the lib?
-    val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging" % Version.scalaLogging
-    val typesafeConfig = "com.typesafe" % "config" % Version.typesafeConfig
+    val zio            = "dev.zio"                      %% "zio"                           % Version.zio
+    val zioTest        = "dev.zio"                      %% "zio-test"                      % Version.zio
+    val zioTestSbt     = "dev.zio"                      %% "zio-test-sbt"                  % Version.zio
+    val sttpCore       = "com.softwaremill.sttp.client" %% "core"                          % Version.sttp
+    val sttpCirce      = "com.softwaremill.sttp.client" %% "circe"                         % Version.sttp
+    val sttpZioClient  = "com.softwaremill.sttp.client" %% "async-http-client-backend-zio" % Version.sttp
+    val circeCore      = "io.circe"                     %% "circe-core"                    % Version.circe
+    val circeGeneric   = "io.circe"                     %% "circe-generic"                 % Version.circe
+    val circeParser    = "io.circe"                     %% "circe-parser"                  % Version.circe
+    val circeOptics    = "io.circe"                     %% "circe-optics"                  % Version.circe
+    val scalaLogging   = "com.typesafe.scala-logging"   %% "scala-logging"                 % Version.scalaLogging
+    val typesafeConfig = "com.typesafe"                  % "config"                        % Version.typesafeConfig
 
   }
 
@@ -72,7 +68,7 @@ lazy val settings =
 
 lazy val commonSettings =
   Seq(
-    name := "scala-prom-client",
+    name := "scala-promql-client",
     organization := "io.sqooba.oss",
     organizationName := "Sqooba",
     homepage := Some(url("https://github.com/Sqooba/scala-promql-client/")),
@@ -94,7 +90,9 @@ lazy val commonSettings =
       )
     ),
     developers := List(
-      Developer("shastick", "Shastick", "", url("https://github.com/Shastick"))
+      Developer("shastick", "Shastick", "", url("https://github.com/Shastick")),
+      Developer("ex0ns", "Ex0ns", "", url("https://github.com/ex0ns")),
+      Developer("yannbolliger", "Yann Bolliger", "", url("https://github.com/yannbolliger"))
     ),
     scalacOptions --= Seq(
       "-Xlint:nullary-override"

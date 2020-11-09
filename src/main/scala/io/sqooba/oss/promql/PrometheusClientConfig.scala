@@ -1,4 +1,4 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 import com.typesafe.config.Config
 import zio.ZLayer

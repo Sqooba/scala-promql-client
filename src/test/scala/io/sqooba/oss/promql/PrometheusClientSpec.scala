@@ -1,4 +1,4 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 import io.circe.syntax._
 import io.circe.parser.decode
@@ -6,16 +6,16 @@ import PrometheusTestUtils._
 import sttp.client.{ Response, StringBody }
 import java.time.Instant
 
-import io.sqooba.oss.promq.metrics.{ MatrixMetric, PrometheusInsertMetric }
-import org.scalatest.Assertions.fail
+import io.sqooba.oss.promql.metrics.{ MatrixMetric, PrometheusInsertMetric }
 import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
 import sttp.model.StatusCode
 import sttp.model.Uri.QuerySegment.KeyValue
 import zio._
 import zio.test.Assertion._
 import zio.test._
-
 import sttp.client.asynchttpclient.zio.stubbing._
+import sttp.model.StatusCode.InternalServerError
+
 import scala.concurrent.duration.DurationInt
 import scala.io.Source
 
@@ -181,7 +181,7 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
                       Nil,
                       Nil
                     )
-                  case _ => fail("We are expecting a string body")
+                  case _ => Response(Left("We are expecting a string body"), InternalServerError)
                 }
               }
             }

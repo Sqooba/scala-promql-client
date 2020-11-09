@@ -1,4 +1,4 @@
-package io.sqooba.oss.promq
+package io.sqooba.oss.promql
 
 import scala.io.Source
 import io.circe.generic.auto._
