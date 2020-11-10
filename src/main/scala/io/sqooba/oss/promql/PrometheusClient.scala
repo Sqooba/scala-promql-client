@@ -36,6 +36,8 @@ class PrometheusClient(
 
   private val endpoint = uri"http://${config.host}:${config.port}"
   logger.info(s"Sending to endpoint $endpoint")
+  private val importEndpoint = endpoint.path("/api/v1/import")
+  logger.info(s"Import endpoint is $importEndpoint")
 
   /**
    * Prometheus is usually pull based (it scrapes the data from the defined sources)
@@ -45,8 +47,6 @@ class PrometheusClient(
    * @return An error or the number of points that were inserted
    */
   def put(dataPoints: Seq[PrometheusInsertMetric]): IO[PrometheusClientError, Int] = {
-    val importEndpoint = endpoint.path("/api/v1/import")
-    logger.info(s"Import endpoint is $importEndpoint")
 
     val toPost = dataPoints.map(_.asJson.noSpaces).mkString("\n")
     val request = basicRequest
