@@ -9,6 +9,8 @@ import io.circe.parser.decode
 import PrometheusInsertMetric._
 import java.time.Instant
 
+import com.typesafe.config.ConfigFactory
+import io.sqooba.oss.promql.PrometheusService.PrometheusService
 import zio._
 import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
 import sttp.client.asynchttpclient.zio.SttpClient
@@ -24,7 +26,7 @@ import sttp.client.asynchttpclient.zio.SttpClient
  * are often related to data exploration or monitoring
  *
  * @param config VictoriaMetrics related configuration
- * @param backend Sttp backend to perform queries
+ * @param client Sttp backend to perform queries
  */
 // scalastyle has some issues with sttp's uri scheme. Disabling it entirely for this file.
 // scalastyle:off
@@ -197,16 +199,21 @@ object PrometheusClient {
   def live(
     config: PrometheusClientConfig,
     client: SttpClient
-  ): Layer[Nothing, Has[PrometheusService.Service]] = ZLayer.succeed(new PrometheusClient(config, client))
+  ): ULayer[Has[PrometheusClient]] = ZLayer.succeed(new PrometheusClient(config, client))
 
-  val y = AsyncHttpClientZioBackend.layer()
-  def live: URLayer[Has[PrometheusClientConfig] with SttpClient, Has[
-    PrometheusService.Service
-  ]] =
+  def live: URLayer[SttpClient with Has[PrometheusClientConfig], PrometheusService] =
     ZLayer
       .fromServiceM[PrometheusClientConfig, SttpClient, Nothing, PrometheusService.Service] { config =>
         ZIO.fromFunction[SttpClient, PrometheusService.Service] { client =>
           new PrometheusClient(config, client)
         }
       }
+
+  def liveDefault: TaskLayer[PrometheusService] = (
+    (
+      Task(ConfigFactory.load().getConfig("promql-client")).toLayer >>>
+        PrometheusClientConfig.layer
+    ) ++ AsyncHttpClientZioBackend.layer()
+  ) >>> PrometheusClient.live
+
 }
