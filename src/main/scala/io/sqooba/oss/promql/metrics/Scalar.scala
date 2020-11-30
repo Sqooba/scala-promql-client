@@ -23,12 +23,12 @@ object Scalar {
    * Decode a scalar type from prometheus into a scala double representation
    *
    * Those values will be decoded in
-   *  [[Double.NaN]] if +-nan is supplied (case insensitive)
-   *  [[Double.NegativeInfinity]] if -inf is supplied (case insensitive)
-   *  [[Double.PositiveInfinity]] if +inf or inf is supplied (case insensitive)
+   *  [Double.NaN] if +-nan is supplied (case insensitive)
+   *  [Double.NegativeInfinity] if -inf is supplied (case insensitive)
+   *  [Double.PositiveInfinity] if +inf or inf is supplied (case insensitive)
    *  The double value of the content for all other cases
    * @param str the string value to decode as double
-   * @return A double in case of success, a [[DecodingFailure]] for all others cases
+   * @return A double in case of success, a [DecodingFailure] for all others cases
    */
   def fromString(str: String): Either[DecodingFailure, Double] = str.toLowerCase match { // scalastyle:ignore
     case "-inf"                  => Right(Double.NegativeInfinity)
