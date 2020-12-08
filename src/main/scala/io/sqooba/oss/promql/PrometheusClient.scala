@@ -9,7 +9,7 @@ import io.circe.parser.decode
 import PrometheusInsertMetric._
 import java.time.Instant
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ Config, ConfigFactory }
 import io.sqooba.oss.promql.PrometheusService.PrometheusService
 import zio._
 import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
@@ -201,6 +201,12 @@ object PrometheusClient {
     client: SttpClient
   ): ULayer[Has[PrometheusClient]] = ZLayer.succeed(new PrometheusClient(config, client))
 
+  def liveFromConfig(
+    config: Config
+  ): TaskLayer[PrometheusService] =
+    (Task(config).toLayer >>> PrometheusClientConfig.layer) ++
+      AsyncHttpClientZioBackend.layer() >>> PrometheusClient.live
+
   def live: URLayer[SttpClient with Has[PrometheusClientConfig], PrometheusService] =
     ZLayer
       .fromServiceM[PrometheusClientConfig, SttpClient, Nothing, PrometheusService.Service] { config =>
@@ -209,11 +215,7 @@ object PrometheusClient {
         }
       }
 
-  def liveDefault: TaskLayer[PrometheusService] = (
-    (
-      Task(ConfigFactory.load().getConfig("promql-client")).toLayer >>>
-        PrometheusClientConfig.layer
-    ) ++ AsyncHttpClientZioBackend.layer()
-  ) >>> PrometheusClient.live
+  def liveDefault: TaskLayer[PrometheusService] =
+    liveFromConfig(ConfigFactory.load().getConfig("promql-client"))
 
 }

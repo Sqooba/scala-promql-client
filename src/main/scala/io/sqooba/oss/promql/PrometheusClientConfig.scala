@@ -1,8 +1,7 @@
 package io.sqooba.oss.promql
 
 import com.typesafe.config.Config
-import zio.ZLayer
-import zio.Has
+import zio.{ Has, RLayer, Task, ZLayer }
 
 /**
  * @param host  server's hostname or ip
@@ -21,33 +20,35 @@ case class PrometheusClientConfig(
 
 object PrometheusClientConfig {
 
-  def from(
-    config: Config
-  ): PrometheusClientConfig =
-    PrometheusClientConfig(
-      config.getString("host"),
-      config.getInt("port"),
-      config.getInt("maxPointsPerTimeseries"),
-      config.getInt("retryNumber"),
-      config.getInt("parallelRequests")
-    )
+  def from(config: Config): Task[PrometheusClientConfig] =
+    Task {
+      PrometheusClientConfig(
+        config.getString("host"),
+        config.getInt("port"),
+        config.getInt("maxPointsPerTimeseries"),
+        config.getInt("retryNumber"),
+        config.getInt("parallelRequests")
+      )
+    }
 
-  def fromKebabCase(config: Config): PrometheusClientConfig =
-    PrometheusClientConfig(
-      config.getString("host"),
-      config.getInt("port"),
-      config.getInt("max-points-per-timeseries"),
-      config.getInt("retry-number"),
-      config.getInt("parallel-requests")
-    )
+  def fromKebabCase(config: Config): Task[PrometheusClientConfig] =
+    Task {
+      PrometheusClientConfig(
+        config.getString("host"),
+        config.getInt("port"),
+        config.getInt("max-points-per-timeseries"),
+        config.getInt("retry-number"),
+        config.getInt("parallel-requests")
+      )
+    }
 
   /**
-   * Create a layer containing a [[PrometheusClientConfig]]. This config is build from a
-   * typesafe config
+   * Create a layer containing a [[PrometheusClientConfig]]. This config is built from a
+   * typesafe config.
    */
-  val layer: ZLayer[Has[Config], Nothing, Has[PrometheusClientConfig]] =
-    ZLayer.fromFunction[Has[Config], PrometheusClientConfig](config => from(config.get))
+  val layer: RLayer[Has[Config], Has[PrometheusClientConfig]] =
+    ZLayer.fromFunctionM[Has[Config], Throwable, PrometheusClientConfig](config => from(config.get))
 
-  val layerKebabCaseConfig: ZLayer[Has[Config], Nothing, Has[PrometheusClientConfig]] =
-    ZLayer.fromFunction[Has[Config], PrometheusClientConfig](config => fromKebabCase(config.get))
+  val layerKebabCaseConfig: RLayer[Has[Config], Has[PrometheusClientConfig]] =
+    ZLayer.fromFunctionM[Has[Config], Throwable, PrometheusClientConfig](config => fromKebabCase(config.get))
 }
