@@ -48,12 +48,12 @@ object RangeQuery {
    *  We are doing -1 because if end = start + x * step then the server returns us
    *  an additional point (in includes the last point). Hence we include this margin
    */
-  val MAX_SAMPLING: Int = 4 - 1
+  val DEFAULT_MAX_SAMPLING: Int = 30000
 
-  private[promql] def splitRangeQuery(query: RangeQuery, maxSample: Int = MAX_SAMPLING): List[RangeQuery] = {
+  private[promql] def splitRangeQuery(query: RangeQuery, maxSample: Int = DEFAULT_MAX_SAMPLING): List[RangeQuery] = {
     val step         = query.step // in second
     val end          = query.end.getEpochSecond
-    val samplingTime = (step * maxSample).seconds
+    val samplingTime = (step * (maxSample - 1)).seconds
 
     @tailrec
     def splitIntervals(acc: Seq[RangeQuery], curr: RangeQuery): Seq[RangeQuery] =

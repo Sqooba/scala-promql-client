@@ -169,13 +169,22 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
             whenAnyRequest.thenRespondWrapped { req =>
               IO {
                 req.body match {
-                  case StringBody(s, _, _) if s.contains("2020-08-01T00%3A00%3A00Z") =>
-                    // This is the first respond, and the last point of (timestamp, 3) is the same as the first of the second response
+                  case StringBody(s, _, _) if s.contains("start=2020-08-01T00%3A00%3A00Z") =>
+                    // This is the first response, and the last point of (timestamp, 3) is the same as the first of the second response
                     Response(Right(createSuccessResponse(start, Seq("1", "2", "3"), step)), StatusCode.Ok, "", Nil, Nil)
-                  case StringBody(_, _, _) =>
-                    // This is the second respond, and the first point of (timestamp, 3) is the same as the last of the first response
+                  case StringBody(s, _, _) if s.contains("start=2020-08-01T00%3A20%3A00Z") =>
+                    // This is the second response, and the first point of (timestamp, 3) is the same as the last of the first response
                     Response(
                       Right(createSuccessResponse(start.plusSeconds(2 * stepSeconds), Seq("3", "4", "5"), step)),
+                      StatusCode.Ok,
+                      "",
+                      Nil,
+                      Nil
+                    )
+                  case StringBody(s, _, _) if s.contains("start=2020-08-01T00%3A40%3A00Z") =>
+                    // This is the third response, and the first point of (timestamp, 3) is the same as the last of the first response
+                    Response(
+                      Right(createSuccessResponse(start.plusSeconds(4 * stepSeconds), Seq("5", "6"), step)),
                       StatusCode.Ok,
                       "",
                       Nil,
@@ -212,7 +221,8 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
                     (start.plusSeconds(stepSeconds), "2"),
                     (start.plusSeconds(2 * stepSeconds), "3"),
                     (start.plusSeconds(3 * stepSeconds), "4"),
-                    (start.plusSeconds(4 * stepSeconds), "5")
+                    (start.plusSeconds(4 * stepSeconds), "5"),
+                    (start.plusSeconds(5 * stepSeconds), "6")
                   )
                 )
               )
