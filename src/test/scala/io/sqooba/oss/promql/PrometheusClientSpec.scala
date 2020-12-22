@@ -127,7 +127,7 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
                    ).toOption.get
                  )
                )
-          resp <- PrometheusService.query(RangeQuery("""{__name__!=""}""", start, end, step = 10, None)).run
+          resp <- PrometheusService.query(RangeQuery("""{__name__!=""}""", start, end, 10.seconds, None)).run
         } yield resp
 
         val effect = scenario.provideLayer(env)
@@ -144,7 +144,7 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
         val end   = Instant.parse("2020-08-08T00:00:00Z")
         val scenario = for {
           _    <- whenAnyRequest.thenRespondServerError()
-          resp <- PrometheusService.query(RangeQuery("""{__name__!=""}""", start, end, step = 10, None)).run
+          resp <- PrometheusService.query(RangeQuery("""{__name__!=""}""", start, end, 10.seconds, None)).run
         } yield resp
 
         val effect = scenario.provideLayer(env)
@@ -154,9 +154,8 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
         )
       },
       testM("concatenate the datapoint") {
-        val start       = Instant.parse("2020-08-01T00:00:00Z")
-        val step        = 10.minutes
-        val stepSeconds = step.toSeconds.toLong
+        val start = Instant.parse("2020-08-01T00:00:00Z")
+        val step  = 10.minutes
 
         /**
          * This test is creating a very prometheus specific condition.
@@ -175,7 +174,13 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
                   case StringBody(s, _, _) if s.contains("start=2020-08-01T00%3A20%3A00Z") =>
                     // This is the second response, and the first point of (timestamp, 3) is the same as the last of the first response
                     Response(
-                      Right(createSuccessResponse(start.plusSeconds(2 * stepSeconds), Seq("3", "4", "5"), step)),
+                      Right(
+                        createSuccessResponse(
+                          start.plusSeconds(2 * step.toSeconds),
+                          Seq("3", "4", "5"),
+                          step
+                        )
+                      ),
                       StatusCode.Ok,
                       "",
                       Nil,
@@ -184,7 +189,13 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
                   case StringBody(s, _, _) if s.contains("start=2020-08-01T00%3A40%3A00Z") =>
                     // This is the third response, and the first point of (timestamp, 3) is the same as the last of the first response
                     Response(
-                      Right(createSuccessResponse(start.plusSeconds(4 * stepSeconds), Seq("5", "6"), step)),
+                      Right(
+                        createSuccessResponse(
+                          start.plusSeconds(4 * step.toSeconds),
+                          Seq("5", "6"),
+                          step
+                        )
+                      ),
                       StatusCode.Ok,
                       "",
                       Nil,
@@ -198,8 +209,8 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
                     RangeQuery(
                       """WGRI_W_10m_Avg""",
                       start,
-                      start.plusSeconds(5 * stepSeconds),
-                      step = stepSeconds.intValue(),
+                      start.plusSeconds(5 * step.toSeconds),
+                      step,
                       None
                     )
                   )
@@ -218,11 +229,11 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
                   Map("__name__" -> "WGRI_W_10m_Avg", "t_id" -> "115"),
                   List(
                     (start, "1"),
-                    (start.plusSeconds(stepSeconds), "2"),
-                    (start.plusSeconds(2 * stepSeconds), "3"),
-                    (start.plusSeconds(3 * stepSeconds), "4"),
-                    (start.plusSeconds(4 * stepSeconds), "5"),
-                    (start.plusSeconds(5 * stepSeconds), "6")
+                    (start.plusSeconds(step.toSeconds), "2"),
+                    (start.plusSeconds(2 * step.toSeconds), "3"),
+                    (start.plusSeconds(3 * step.toSeconds), "4"),
+                    (start.plusSeconds(4 * step.toSeconds), "5"),
+                    (start.plusSeconds(5 * step.toSeconds), "6")
                   )
                 )
               )

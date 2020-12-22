@@ -3,14 +3,39 @@ package io.sqooba.oss.promql
 import java.time.Instant
 
 import scala.annotation.tailrec
-import scala.concurrent.duration.{ DurationInt, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 
 sealed trait PrometheusQuery
 
-case class InstantQuery(query: String, time: Option[Instant], timeout: Option[Int]) extends PrometheusQuery
+/**
+ * A query to get the value at a single point in time.
+ *
+ * @param query
+ * @param time
+ * @param timeout the finest resolution is seconds
+ */
+case class InstantQuery(
+  query: String,
+  time: Option[Instant],
+  timeout: Option[FiniteDuration]
+) extends PrometheusQuery
 
-case class RangeQuery(query: String, start: Instant, end: Instant, step: Int, timeout: Option[Int])
-    extends PrometheusQuery {
+/**
+ * Query to get the values over a range of time.
+ * @param query
+ * @param start
+ * @param end
+ * @param step     the finest resolution is seconds
+ * @param timeout  the finest resolution is seconds
+ */
+case class RangeQuery(
+  query: String,
+  start: Instant,
+  end: Instant,
+  step: FiniteDuration,
+  timeout: Option[FiniteDuration]
+) extends PrometheusQuery {
+
   def withDuration(duration: FiniteDuration): RangeQuery = copy(end = start.plusSeconds(duration.toSeconds))
   def shift(duration: FiniteDuration): RangeQuery =
     copy(start = start.plusSeconds(duration.toSeconds), end = end.plusSeconds(duration.toSeconds))
@@ -33,6 +58,11 @@ object PrometheusQuery {
       case (_, v: Option[Any]) => v.nonEmpty
       case _                   => true
     }.map {
+      // Convert all durations to seconds in order to respect PromQL duration notation
+      // https://prometheus.io/docs/prometheus/latest/querying/basics/#time-durations
+      case (k, v: FiniteDuration)       => (k, s"${v.toSeconds}s")
+      case (k, Some(v: FiniteDuration)) => (k, s"${v.toSeconds}s")
+
       case (k, Some(v)) => (k, v.toString)
       case (k, v)       => (k, v.toString)
     }.toMap
@@ -51,9 +81,8 @@ object RangeQuery {
   val DEFAULT_MAX_SAMPLING: Int = 30000
 
   private[promql] def splitRangeQuery(query: RangeQuery, maxSample: Int = DEFAULT_MAX_SAMPLING): List[RangeQuery] = {
-    val step         = query.step // in second
     val end          = query.end.getEpochSecond
-    val samplingTime = (step * (maxSample - 1)).seconds
+    val samplingTime = (query.step * (maxSample - 1).toLong)
 
     @tailrec
     def splitIntervals(acc: Seq[RangeQuery], curr: RangeQuery): Seq[RangeQuery] =
