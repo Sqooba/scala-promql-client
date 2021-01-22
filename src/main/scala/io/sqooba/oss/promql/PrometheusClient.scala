@@ -88,7 +88,7 @@ class PrometheusClient(
         responses
           .map(_.collect {
             case x: MatrixResponseData => x
-          }.reduceLeft((acc, curr) => acc.merge(curr)))
+          }.foldLeft(MatrixResponseData(List[MatrixMetric]()))((acc, curr) => acc.merge(curr)))
       case _ => throw new NotImplementedError("The type of query is not supported yet")
     }
 

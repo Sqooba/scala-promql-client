@@ -20,7 +20,7 @@ import scala.concurrent.duration.DurationInt
 import scala.io.Source
 
 object PrometheusClientSpec extends DefaultRunnableSpec {
-  private val emptySequence = Seq(createInsertPoint(), createInsertPoint())
+  private val twoPointSequence = Seq(createInsertPoint(), createInsertPoint())
   private val config =
     PrometheusClientConfig("test", port = 12, maxPointsPerTimeseries = 1000, retryNumber = 1, parallelRequests = 5)
   private val env = (ZLayer.succeed(config) ++ AsyncHttpClientZioBackend.stubLayer) >+> PrometheusClient.live
@@ -28,7 +28,7 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
   val spec = suite("VictoriaMetricsClient")(
     suite("put")(
       testM("create a stream of JSON to insert data") {
-        val request = PrometheusService.put(emptySequence)
+        val request = PrometheusService.put(twoPointSequence)
         val scenario = for {
           _ <- whenRequestMatches(_.body match {
                  case StringBody(s, _, _) => s.split("\n").length == 2
@@ -40,7 +40,7 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
         assertM(scenario.provideLayer(env))(equalTo(2))
       },
       testM("correctly send the serialized data") {
-        val customSequence = emptySequence
+        val customSequence = twoPointSequence
           .map(point => point.copy(metric = Map("customtag" -> "value")))
 
         val scenario = for {
@@ -67,30 +67,30 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
       testM("return the number of inserted points") {
         val scenario = for {
           _    <- whenAnyRequest.thenRespondOk
-          resp <- PrometheusService.put(emptySequence)
+          resp <- PrometheusService.put(twoPointSequence)
         } yield resp
 
         val effect = scenario.provideLayer(env)
 
-        assertM(effect)(equalTo(emptySequence.length))
+        assertM(effect)(equalTo(twoPointSequence.length))
       }
     ),
     suite("export")(
       testM("correctly add the parameters") {
         val scenario = for {
           _ <- whenAnyRequest
-                 .thenRespond(emptySequence.map(_.asJson.noSpaces).mkString("\n"))
+                 .thenRespond(twoPointSequence.map(_.asJson.noSpaces).mkString("\n"))
           resp <- PrometheusService.export("""{__name__!=""}""", None, None)
         } yield resp
 
         val effect = scenario.provideLayer(env)
 
-        assertM(effect)(equalTo(emptySequence))
+        assertM(effect)(equalTo(twoPointSequence))
       },
       testM("include the start and end timestamp") {
         val start = Instant.parse("2020-08-01T00:00:00Z")
         val end   = Instant.parse("2020-08-08T00:00:00Z")
-        val data  = emptySequence
+        val data  = twoPointSequence
 
         val scenario = for {
           _ <- whenRequestMatches { req =>
@@ -151,6 +151,40 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
 
         assertM(effect)(
           fails(isSubtype[PrometheusClientError](anything))
+        )
+      },
+      testM("returns empty dataset") {
+        val start = Instant.parse("2020-09-01T00:00:00Z")
+        val end = Instant.parse("2020-09-08T00:00:00Z")
+        val scenario = for {
+          _ <- whenAnyRequest.thenRespond(
+            Right(createSuccessResponse(start, Seq(), 10.seconds)
+            ))
+          resp <- PrometheusService.query(RangeQuery("""{__name__!=""}""", start, end, 10.seconds, None)).run
+        }
+          yield resp
+
+        val effect = scenario.provideLayer(env)
+
+        assertM(effect)({
+          succeeds(
+            {
+              equalTo(
+
+                MatrixResponseData(
+                  List(
+                    MatrixMetric(
+                      Map("__name__" -> "WGRI_W_10m_Avg", "t_id" -> "115"),
+                      List()
+                    )
+                  )
+
+                )
+              )
+
+            }
+          )
+        }
         )
       },
       testM("concatenate the datapoint") {
