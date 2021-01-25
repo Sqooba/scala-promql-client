@@ -204,8 +204,11 @@ object PrometheusClient {
   def liveFromConfig(
     config: Config
   ): TaskLayer[PrometheusService] =
-    (Task(config).toLayer >>> PrometheusClientConfig.layer) ++
-      AsyncHttpClientZioBackend.layer() >>> PrometheusClient.live
+    Task(config).toLayer >>> liveFromConfig
+
+  def liveFromConfig: RLayer[Has[Config], PrometheusService] =
+    PrometheusClientConfig.layer ++ AsyncHttpClientZioBackend.layer() >>>
+      PrometheusClient.live
 
   def live: URLayer[SttpClient with Has[PrometheusClientConfig], PrometheusService] =
     ZLayer
