@@ -17,9 +17,6 @@ case class PrometheusErrorResponse(
   errorType: String,
   error: String,
   warnings: Option[Seq[String]]
-
-)
-  extends PrometheusError
-{
-  override def toString : String = { error }
+) extends PrometheusError {
+  override def toString: String = error
 }

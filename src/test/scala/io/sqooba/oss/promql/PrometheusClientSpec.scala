@@ -155,14 +155,11 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
       },
       testM("returns empty dataset") {
         val start = Instant.parse("2020-09-01T00:00:00Z")
-        val end = Instant.parse("2020-09-08T00:00:00Z")
+        val end   = Instant.parse("2020-09-08T00:00:00Z")
         val scenario = for {
-          _ <- whenAnyRequest.thenRespond(
-            Right(createSuccessResponse(start, Seq(), 10.seconds)
-            ))
+          _    <- whenAnyRequest.thenRespond(Right(createSuccessResponse(start, Seq(), 10.seconds)))
           resp <- PrometheusService.query(RangeQuery("""{__name__!=""}""", start, end, 10.seconds, None)).run
-        }
-          yield resp
+        } yield resp
 
         val effect = scenario.provideLayer(env)
 
@@ -170,7 +167,6 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
           succeeds(
             {
               equalTo(
-
                 MatrixResponseData(
                   List(
                     MatrixMetric(
@@ -178,14 +174,12 @@ object PrometheusClientSpec extends DefaultRunnableSpec {
                       List()
                     )
                   )
-
                 )
               )
 
             }
           )
-        }
-        )
+        })
       },
       testM("concatenate the datapoint") {
         val start = Instant.parse("2020-08-01T00:00:00Z")
