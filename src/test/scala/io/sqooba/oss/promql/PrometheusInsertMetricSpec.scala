@@ -4,17 +4,20 @@ import io.circe.syntax._
 import io.circe.parser.decode
 import PrometheusTestUtils._
 import io.sqooba.oss.promql.metrics.PrometheusInsertMetric
-import zio.test.Assertion.{ equalTo, hasField, isSome }
+import zio.test.Assertion.{equalTo, hasField, isSome}
 import zio.test._
+import zio.test.junit.ZTestJUnitRunner
+import org.junit.runner.RunWith
 
-object PrometheusInsertMetricSpec extends DefaultRunnableSpec {
+@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
+class PrometheusInsertMetricSpec extends DefaultRunnableSpec {
 
   val spec = suite("PrometheusInsertMetric")(
     suite("decoder")(
       test("restore the tags") {
-        val point         = createInsertPoint()
+        val point = createInsertPoint()
         val enhancedPoint = point.copy(metric = Map("CustomTags" -> "CustomValue"))
-        val encoded       = enhancedPoint.asJson
+        val encoded = enhancedPoint.asJson
 
         assert(
           decode[PrometheusInsertMetric](encoded.toString()).toOption
