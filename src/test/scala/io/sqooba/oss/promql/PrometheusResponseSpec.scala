@@ -245,6 +245,47 @@ object PrometheusResponseSpec extends DefaultRunnableSpec {
         )
       )
     },
+    test("remove duplicated points (with conflicting values)") {
+      val firstResponse = MatrixResponseData(
+        List(
+          MatrixMetric(
+            Map("__name__" -> "WGRI_W_10m_Avg", "id" -> "122", "entityType" -> "t"),
+            List(
+              (Instant.ofEpochMilli(20.minutes.toSeconds), "180"),
+              (Instant.ofEpochMilli(30.minutes.toSeconds), "190")
+            )
+          )
+        )
+      )
+      val secondResponse = MatrixResponseData(
+        List(
+          MatrixMetric(
+            Map("__name__" -> "WGRI_W_10m_Avg", "id" -> "122", "entityType" -> "t"),
+            List(
+              (
+                Instant.ofEpochMilli(30.minutes.toSeconds),
+                "195"
+              ), // We have the same timestamp as the previous result, but not the same value
+              (Instant.ofEpochMilli(40.minutes.toSeconds), "200"),
+              (Instant.ofEpochMilli(50.minutes.toSeconds), "190")
+            )
+          )
+        )
+      )
+      val merged = firstResponse.merge(secondResponse)
+      assert(merged.result.length)(equalTo(1)) &&
+      assert(merged.result.head.values)(
+        equalTo(
+          List(
+            (Instant.ofEpochMilli(20.minutes.toSeconds), "180"),
+            (Instant.ofEpochMilli(30.minutes.toSeconds), "195"), // the value from the second response is kept
+            (Instant.ofEpochMilli(40.minutes.toSeconds), "200"),
+            (Instant.ofEpochMilli(50.minutes.toSeconds), "190")
+          )
+        )
+      )
+
+    },
     test("merge the warnings") {
       val first  = createSuccessResponse(Instant.ofEpochMilli(0), Seq("1"), 10.minutes)
       val second = createSuccessResponse(Instant.ofEpochMilli(10.minutes.toMillis), Seq("2"), 10.minutes)

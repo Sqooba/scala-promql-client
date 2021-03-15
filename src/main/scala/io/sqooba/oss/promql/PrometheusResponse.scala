@@ -39,9 +39,10 @@ final case class MatrixResponseData(result: List[MatrixMetric]) extends Response
               // We don't want to duplicate those points because we want the query splitting to be as transparent as possible
               // In order to be as explicit as possible, pattern matching is used, but we might use a mutable LinkedHashSet
               // It should provide O(1) complexity for insert and duplication search
+              // In case of conflict on the value, the last one is kept
               values.map(_.values).foldLeft(List(): List[(Instant, String)]) {
-                case (accHead :+ accLast, first :: values) if accLast == first => (accHead :+ accLast) ++ values
-                case (acc, values)                                             => acc ++ values
+                case (accHead :+ accLast, first :: values) if accLast._1 == first._1 => (accHead :+ first) ++ values
+                case (acc, values)                                                   => acc ++ values
               }
             )
         }
