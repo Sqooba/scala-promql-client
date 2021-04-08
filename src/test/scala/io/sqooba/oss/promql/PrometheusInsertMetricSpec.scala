@@ -6,7 +6,6 @@ import PrometheusTestUtils._
 import io.sqooba.oss.promql.metrics.PrometheusInsertMetric
 import zio.test.Assertion.{ equalTo, hasField, isSome }
 import zio.test._
-import zio.test.junit.ZTestJUnitRunner
 import org.junit.runner.RunWith
 
 @RunWith(classOf[zio.test.junit.ZTestJUnitRunner])

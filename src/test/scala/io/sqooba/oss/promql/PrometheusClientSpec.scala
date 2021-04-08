@@ -18,7 +18,6 @@ import sttp.model.StatusCode.InternalServerError
 
 import scala.concurrent.duration.DurationInt
 import scala.io.Source
-import zio.test.junit.ZTestJUnitRunner
 import org.junit.runner.RunWith
 
 @RunWith(classOf[zio.test.junit.ZTestJUnitRunner])

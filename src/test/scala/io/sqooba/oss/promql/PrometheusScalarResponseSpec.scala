@@ -7,7 +7,6 @@ import java.time.Instant
 import PrometheusResponse._
 import zio.test._
 import zio.test.Assertion._
-import zio.test.junit.ZTestJUnitRunner
 import org.junit.runner.RunWith
 
 @RunWith(classOf[zio.test.junit.ZTestJUnitRunner])

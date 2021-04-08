@@ -17,13 +17,14 @@ lazy val root =
         library.circeOptics,
         library.scalaLogging,
         library.typesafeConfig,
-        library.zio        % Provided,
-        library.zioTest    % Test,
-        library.zioTestSbt % Test
+        library.zio             % Provided,
+        library.zioTest         % Test,
+        library.zioTestJunit    % Test,
+        library.zioTestSbt      % Test
       ),
       publishArtifact := true,
       testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
-      scalaVersion := "2.12.12",
+      scalaVersion := "2.13.3",
       crossScalaVersions := Seq("2.12.12", "2.13.3")
     )
 
@@ -44,6 +45,7 @@ lazy val library =
 
     val zio            = "dev.zio"                      %% "zio"                           % Version.zio
     val zioTest        = "dev.zio"                      %% "zio-test"                      % Version.zio
+    val zioTestJunit   = "dev.zio"                      %% "zio-test-junit"                % Version.zio
     val zioTestSbt     = "dev.zio"                      %% "zio-test-sbt"                  % Version.zio
     val sttpCore       = "com.softwaremill.sttp.client" %% "core"                          % Version.sttp
     val sttpCirce      = "com.softwaremill.sttp.client" %% "circe"                         % Version.sttp
