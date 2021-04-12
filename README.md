@@ -106,11 +106,15 @@ As described on Prometheus' documentation, there are a few different queries tha
 - InstantQuery [documentation](https://prometheus.io/docs/prometheus/latest/querying/api/#instant-queries) to run a query at a single point in time
 - RangeQuery [documentation](https://prometheus.io/docs/prometheus/latest/querying/api/#range-queries) to run a query over a range of time
 
-Prometheus also has the following query types which are not supported yet by this client:
+The following meta queries allow querying the set of available metrics for a specific time range:
+- SeriesQuery [documentation](https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers) to find the metrics, identified by combinations of labels
+  - returns `MetricListReponseData` or `EmptyResponseData`
+- LabelsQuery [documentation](https://prometheus.io/docs/prometheus/latest/querying/api/#getting-label-names) to get a list of actually used lables
+  - returns `StringListResponsedata` or `EmptyResponseData`
+- LabelValuesQuery [documentation](https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values) to get a list of actually used values for a given label
+  - returns `StringListResponsedata` or `EmptyResponseData`
 
-- SeriesQuery [documentation](https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers)
-- LabelsQuery [documentation](https://prometheus.io/docs/prometheus/latest/querying/api/#getting-label-names)
-- LabelValuesQuery [documentation](https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values)
+The meta queries are not precisely specified, and the behaviour may differ sightly from one promQL compatible server implementation to another.
 
 The `query` can be used in the following way:
 
@@ -156,6 +160,9 @@ for {
     }
 }
 ```
+
+Don't forget to pattern match and provide for a regular `case _`. Meta queries have to deal with empty responses by the means of the EmptyResponseData type.
+
 
 # Versions and releases
 

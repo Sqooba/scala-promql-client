@@ -17,10 +17,11 @@ lazy val root =
         library.circeOptics,
         library.scalaLogging,
         library.typesafeConfig,
-        library.zio             % Provided,
-        library.zioTest         % Test,
-        library.zioTestJunit    % Test,
-        library.zioTestSbt      % Test
+        library.zio            % Provided,
+        library.zioTest        % Test,
+        library.zioTestJunit   % Test,
+        library.zioTestSbt     % Test,
+        library.testContainers % Test
       ),
       publishArtifact := true,
       testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
@@ -36,26 +37,29 @@ lazy val library =
   new {
 
     object Version {
-      val zio            = "1.0.3"
-      val sttp           = "2.2.8"
-      val circe          = "0.13.0"
-      val scalaLogging   = "3.9.2"
-      val typesafeConfig = "1.4.0"
+      val zio                 = "1.0.3"
+      val sttp                = "2.2.8"
+      val circe               = "0.13.0"
+      val scalaLogging        = "3.9.2"
+      val typesafeConfig      = "1.4.0"
+      val testContainersScala = "0.38.9"
+
     }
 
-    val zio            = "dev.zio"                      %% "zio"                           % Version.zio
-    val zioTest        = "dev.zio"                      %% "zio-test"                      % Version.zio
-    val zioTestJunit   = "dev.zio"                      %% "zio-test-junit"                % Version.zio
-    val zioTestSbt     = "dev.zio"                      %% "zio-test-sbt"                  % Version.zio
-    val sttpCore       = "com.softwaremill.sttp.client" %% "core"                          % Version.sttp
-    val sttpCirce      = "com.softwaremill.sttp.client" %% "circe"                         % Version.sttp
-    val sttpZioClient  = "com.softwaremill.sttp.client" %% "async-http-client-backend-zio" % Version.sttp
-    val circeCore      = "io.circe"                     %% "circe-core"                    % Version.circe
-    val circeGeneric   = "io.circe"                     %% "circe-generic"                 % Version.circe
-    val circeParser    = "io.circe"                     %% "circe-parser"                  % Version.circe
-    val circeOptics    = "io.circe"                     %% "circe-optics"                  % Version.circe
-    val scalaLogging   = "com.typesafe.scala-logging"   %% "scala-logging"                 % Version.scalaLogging
-    val typesafeConfig = "com.typesafe"                  % "config"                        % Version.typesafeConfig
+    val zio            = "dev.zio"                      %% "zio"                            % Version.zio
+    val zioTest        = "dev.zio"                      %% "zio-test"                       % Version.zio
+    val zioTestSbt     = "dev.zio"                      %% "zio-test-sbt"                   % Version.zio
+    val zioTestJunit   = "dev.zio"                      %% "zio-test-junit"                 % Version.zio
+    val sttpCore       = "com.softwaremill.sttp.client" %% "core"                           % Version.sttp
+    val sttpCirce      = "com.softwaremill.sttp.client" %% "circe"                          % Version.sttp
+    val sttpZioClient  = "com.softwaremill.sttp.client" %% "async-http-client-backend-zio"  % Version.sttp
+    val circeCore      = "io.circe"                     %% "circe-core"                     % Version.circe
+    val circeGeneric   = "io.circe"                     %% "circe-generic"                  % Version.circe
+    val circeParser    = "io.circe"                     %% "circe-parser"                   % Version.circe
+    val circeOptics    = "io.circe"                     %% "circe-optics"                   % Version.circe
+    val scalaLogging   = "com.typesafe.scala-logging"   %% "scala-logging"                  % Version.scalaLogging
+    val typesafeConfig = "com.typesafe"                  % "config"                         % Version.typesafeConfig
+    val testContainers = "com.dimafeng"                 %% "testcontainers-scala-scalatest" % Version.testContainersScala
 
   }
 

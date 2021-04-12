@@ -7,13 +7,14 @@ import sttp.client.circe._
 import metrics._
 import io.circe.parser.decode
 import PrometheusInsertMetric._
-import java.time.Instant
 
+import java.time.Instant
 import com.typesafe.config.{ Config, ConfigFactory }
 import io.sqooba.oss.promql.PrometheusService.PrometheusService
 import zio._
 import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
 import sttp.client.asynchttpclient.zio.SttpClient
+import sttp.model.{ MediaType, Method }
 
 /**
  * This is a "low level" prometheus client, it can be used to communicate with
@@ -21,9 +22,6 @@ import sttp.client.asynchttpclient.zio.SttpClient
  * against VM and to return the raw data It supports the response formats described in
  * [https://prometheus.io/docs/prometheus/latest/querying/api/#expression-query-result-formats](the
  * doc).
- *
- * It currently only works with the /query and /query_range endpoint because the other
- * are often related to data exploration or monitoring
  *
  * @param config VictoriaMetrics related configuration
  * @param client Sttp backend to perform queries
@@ -89,6 +87,11 @@ class PrometheusClient(
           .map(_.collect {
             case x: MatrixResponseData => x
           }.foldLeft(MatrixResponseData(List[MatrixMetric]()))((acc, curr) => acc.merge(curr)))
+
+      case q: SeriesQuery      => executeMetaQuery(q, "/api/v1/series")
+      case q: LabelsQuery      => executeMetaQuery(q, "/api/v1/labels")
+      case q: LabelValuesQuery => executeMetaQuery(q, s"/api/v1/label/${q.label}/values")
+
       case _ => throw new NotImplementedError("The type of query is not supported yet")
     }
 
@@ -149,9 +152,11 @@ class PrometheusClient(
 
   private def executeInstantQuery(promQuery: InstantQuery): IO[PrometheusError, ResponseData] = {
     val httpQueryEndpoint = endpoint.path("/api/v1/query")
+    val body              = promQuery.formEncode()
+
     val httpQuery = basicRequest
-      // Here we need to encore as a form and not as JSON, so we can't use circe magic
-      .body(PrometheusQuery.formEncode(promQuery))
+      .body(body, TKT-XXX)
+      .contentType(MediaType.ApplicationXWwwFormUrlencoded)
       .post(httpQueryEndpoint)
       .response(asJson[PrometheusResponse])
 
@@ -159,13 +164,13 @@ class PrometheusClient(
     handleQueryError(response)
   }
 
-  private def executeRangeQuery(query: RangeQuery): IO[PrometheusError, ResponseData] = {
+  private def executeRangeQuery(promQuery: RangeQuery): IO[PrometheusError, ResponseData] = {
     val queryEndpoint = endpoint.path("/api/v1/query_range")
-    val body          = PrometheusQuery.formEncode(query)
-    logger.debug(f"RangeQuery body: $body")
+    val body          = promQuery.formEncode()
 
     val httpQuery = basicRequest
-      .body(body)
+      .contentType(MediaType.ApplicationXWwwFormUrlencoded)
+      .body(body, TKT-XXX)
       .post(queryEndpoint)
       .response(asJson[PrometheusResponse])
 
@@ -173,26 +178,53 @@ class PrometheusClient(
     handleQueryError(response)
   }
 
+  private def executeMetaQuery(promQuery: PrometheusQuery, apiEndpoint: String): IO[PrometheusError, ResponseData] = {
+    val queryEndpoint = endpoint.path(apiEndpoint)
+    val body          = promQuery.formEncode()
+
+    val httpQuery = (promQuery.httpMethod() match {
+      case Method.GET =>
+        basicRequest
+          .method(promQuery.httpMethod(), queryEndpoint.params(body: _*))
+      case _ =>
+        basicRequest
+          .contentType(MediaType.ApplicationXWwwFormUrlencoded)
+          .method(promQuery.httpMethod(), queryEndpoint)
+          .body(body, TKT-XXX)
+    }).response(promQuery match {
+      case _ => asJson[PrometheusResponse]
+    })
+
+    val response = for {
+      query    <- IO.succeed(httpQuery)
+      response <- SttpClient.send(query).provide(client)
+    } yield response
+
+    handleQueryError(response)
+  }
+
   private def handleQueryError(
     response: Task[Response[Either[ResponseError[io.circe.Error], PrometheusResponse]]]
-  ): IO[PrometheusError, ResponseData] =
-    response.refineOrDie {
+  ): IO[PrometheusError, ResponseData] = {
+    val result = response.refineOrDie {
       case e: Throwable => PrometheusClientError(s"[query-error] Something went wrong ${e.getLocalizedMessage}")
     }
-      .flatMap(
-        _.body.fold(
-          error =>
-            IO.fail(
-              // There is no easy way to log the raw response from the client, it should be easier in sttp 3 (https://github.com/softwaremill/sttp/issues/190)
-              PrometheusClientError(f"Unable to execute query: ${error.getLocalizedMessage}")
-            ),
-          {
-            case success: SuccessResponse => IO.succeed(success.data)
-            case ErrorResponse(_, errorType, error, warnings) =>
-              IO.fail(PrometheusErrorResponse(errorType, error, warnings))
-          }
-        )
+    result.flatMap(response =>
+      response.body.fold(
+        error =>
+          IO.fail(
+            // There is no easy way to log the raw response from the client, it should be easier in sttp 3 (https://github.com/softwaremill/sttp/issues/190)
+            PrometheusClientError(f"Unable to execute query: ${error.getLocalizedMessage}")
+          ),
+        {
+          case success: SuccessResponse => IO.succeed(success.data)
+          case ErrorResponse(_, errorType, error, warnings) =>
+            IO.fail(PrometheusErrorResponse(errorType, error, warnings))
+        }
       )
+    )
+  }
+
 }
 
 object PrometheusClient {
@@ -200,6 +232,12 @@ object PrometheusClient {
     config: PrometheusClientConfig,
     client: SttpClient
   ): ULayer[Has[PrometheusClient]] = ZLayer.succeed(new PrometheusClient(config, client))
+
+  def live(
+    config: PrometheusClientConfig
+  ): TaskLayer[PrometheusService] =
+    Task(config).toLayer ++
+      AsyncHttpClientZioBackend.layer() >>> PrometheusClient.live
 
   def liveFromConfig(
     config: Config

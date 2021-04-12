@@ -5,7 +5,6 @@ import io.circe.parser.decode
 import PrometheusTestUtils._
 import sttp.client.{ Response, StringBody }
 import java.time.Instant
-
 import io.sqooba.oss.promql.metrics.{ MatrixMetric, PrometheusInsertMetric }
 import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
 import sttp.model.StatusCode
@@ -25,7 +24,13 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
   private val twoPointSequence = Seq(createInsertPoint(), createInsertPoint())
 
   private val config =
-    PrometheusClientConfig("test", port = 12, maxPointsPerTimeseries = 1000, retryNumber = 1, parallelRequests = 5)
+    PrometheusClientConfig(
+      "test",
+      port = 12,
+      maxPointsPerTimeseries = 1000,
+      retryNumber = 1,
+      parallelRequests = 5
+    )
   private val env = (ZLayer.succeed(config) ++ AsyncHttpClientZioBackend.stubLayer) >+> PrometheusClient.live
 
   val spec = suite("VictoriaMetricsClient")(
@@ -231,7 +236,30 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
                       Nil,
                       Nil
                     )
-                  case _ => Response(Left("We are expecting a string body"), InternalServerError)
+                  case StringBody(s, encoding, ct) => {
+                    System.err.println(s + encoding + ct);
+                    Response(Left("We are expecting a string body"), InternalServerError)
+
+                  }
+                  case _ => // Response(Left("We are expecting a string body"), InternalServerError)
+                    Response(
+                      Right(
+                        ErrorResponse(
+                          Some(
+                            StringResponseData(
+                              (
+                                Instant.now(),
+                                "We were expecting a string body of Content-Type: application/x-www-form-urlencoded"
+                              )
+                            )
+                          ),
+                          "Bad Request",
+                          "We were expecting a string body of Content-Type: application/x-www-form-urlencoded",
+                          None
+                        )
+                      ),
+                      StatusCode.BadRequest
+                    )
                 }
               }
             }

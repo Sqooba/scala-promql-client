@@ -1,10 +1,10 @@
 package io.sqooba.oss.promql
 
 import java.time.Instant
-
 import cats.syntax.functor._
-import io.circe.{ Decoder, DecodingFailure }
+import io.circe.{ Decoder, DecodingFailure, HCursor }
 import io.circe.generic.auto._
+import io.sqooba.oss.promql.metrics.Label.stringDecode
 import metrics._
 
 import scala.util.{ Failure, Success, Try }
@@ -65,6 +65,20 @@ final case class ScalarResponseData(result: (Instant, Double)) extends ResponseD
  */
 final case class StringResponseData(result: (Instant, String)) extends ResponseData
 
+/**
+ * Represents a list of Strings (e.g. labels, label values )
+ */
+final case class StringListResponseData(data: List[String]) extends ResponseData
+
+/**
+ * Represents a list of String identifier pairs. (e.g. series queries)
+ */
+final case class MetricListResponseData(data: List[Map[String, String]]) extends ResponseData
+
+/**
+ */
+final case class EmptyResponseData() extends ResponseData
+
 object ResponseData {
 
   // WARNING: Don't remove this import even if IntelliJ considers it unused. It's needed
@@ -79,17 +93,45 @@ object ResponseData {
    * This field will describe the kind of results that will be contained in the response
    */
   implicit val decodePrometheusResponseData: Decoder[ResponseData] = Decoder.instance { h =>
-    val dataDecoder = h
-      .downField("resultType")
-      .as[String]
-      .flatMap {
-        case "matrix" => Right(Decoder[MatrixResponseData].widen)
-        case "vector" => Right(Decoder[VectorResponseData].widen)
-        case "scalar" => Right(Decoder[ScalarResponseData].widen)
-        case "string" => Right(Decoder[StringResponseData].widen)
-        case _        => Left(DecodingFailure("Unable to find decoder", Nil))
+    if (h.downField("resultType").succeeded) {
+      val dataDecoder =
+        h
+          .downField("resultType")
+          .as[String]
+          .flatMap {
+            case "matrix" => Right(Decoder[MatrixResponseData].widen)
+            case "vector" => Right(Decoder[VectorResponseData].widen)
+            case "scalar" => Right(Decoder[ScalarResponseData].widen)
+            case "string" => Right(Decoder[StringResponseData].widen)
+            case _        => Left(DecodingFailure("Unable to find decoder", Nil))
+          }
+      dataDecoder.flatMap(
+        _.apply(h)
+      )
+
+    } else {
+      /* to treat the current Cursor position as an Array using case classes and DerivedDecoder , we
+         have to move up to the top level and then descend into the "data" array.
+       */
+      val upCursor    = h.up.asInstanceOf[HCursor]
+      val arrayCursor = h.values;
+
+      val dataDecoder = {
+        if (arrayCursor.get.isEmpty) {
+          Right(Decoder[EmptyResponseData].widen)
+        } else if (arrayCursor.get.head.isObject) {
+          Right(Decoder[MetricListResponseData].widen)
+        } else if (arrayCursor.get.head.isString) {
+          Right(Decoder[StringListResponseData].widen)
+        } else {
+          Left(DecodingFailure("Error decoding `data response as a List of Something", Nil))
+        }
       }
-    dataDecoder.flatMap(_.apply(h))
+
+      dataDecoder.flatMap(
+        _.apply(upCursor)
+      )
+    }
   }
 }
 

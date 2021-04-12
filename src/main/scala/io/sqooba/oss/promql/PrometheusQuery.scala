@@ -1,11 +1,18 @@
 package io.sqooba.oss.promql
 
-import java.time.Instant
+import sttp.model.Method
 
+import java.time.Instant
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 
-sealed trait PrometheusQuery
+import scala.collection.immutable
+
+// scalastyle:off multiple.string.literals
+sealed trait PrometheusQuery {
+  def formEncode(): immutable.Seq[(String, String)]
+  def httpMethod(): Method = Method.POST
+}
 
 /**
  * A query to get the value at a single point in time.
@@ -14,11 +21,22 @@ sealed trait PrometheusQuery
  * @param time
  * @param timeout the finest resolution is seconds
  */
-case class InstantQuery(
+final case class InstantQuery(
   query: String,
   time: Option[Instant],
   timeout: Option[FiniteDuration]
-) extends PrometheusQuery
+) extends PrometheusQuery {
+  override def formEncode(): immutable.Seq[(String, String)] =
+    immutable
+      .Seq[Option[(String, String)]](
+        Some(("query", query)),
+        time.map(t => ("time", t.toString)),
+        timeout.map(t => ("timeout", s"${t.toSeconds}s"))
+      )
+      .collect {
+        case Some((k, v)) => (k, v)
+      }
+}
 
 /**
  * Query to get the values over a range of time.
@@ -35,37 +53,74 @@ case class RangeQuery(
   step: FiniteDuration,
   timeout: Option[FiniteDuration]
 ) extends PrometheusQuery {
-
+  override def formEncode(): immutable.Seq[(String, String)] =
+    immutable
+      .Seq[Option[(String, String)]](
+        Some(("query", query)),
+        Some(("start", start.toString)),
+        Some(("end", end.toString)),
+        Some(("step", s"${step.toSeconds}s")),
+        timeout.map(t => ("timeout", s"${t.toSeconds}s"))
+      )
+      .collect {
+        case Some((k, v)) => (k, v)
+      }
   def withDuration(duration: FiniteDuration): RangeQuery = copy(end = start.plusSeconds(duration.toSeconds))
   def shift(duration: FiniteDuration): RangeQuery =
     copy(start = start.plusSeconds(duration.toSeconds), end = end.plusSeconds(duration.toSeconds))
 }
 
-// The following queries are not yet supported by the client
-case class SeriesQuery(matches: Seq[String], start: Instant, end: Instant)               extends PrometheusQuery
-case class LabelsQuery(start: Option[Instant], end: Option[Instant])                     extends PrometheusQuery
-case class LabelValuesQuery(label: String, start: Option[Instant], end: Option[Instant]) extends PrometheusQuery
+case class SeriesQuery(matches: collection.Seq[String], start: Instant, end: Instant) extends PrometheusQuery {
+  override def formEncode(): immutable.Seq[(String, String)] = {
+    // there have to be multiple arguments with the same name, and brackets..
 
-object PrometheusQuery {
+    val xs = immutable.Seq(
+      ("start", start.toString),
+      ("end", end.toString)
+    )
+    xs ++ (matches.map(s => ("match[]", s)))
+  }
+}
 
-  /**
-   * In scala 2.12, Product has no 'productElementNames', so we need to be creative
-   */
-  implicit def formEncode[T <: PrometheusQuery](query: T with Product): Map[String, String] =
-    // Betting on the fact that declared fields and productIterator are in the same order :/
-    // Hoping Guillaume's tests are comprehensive here...
-    (query.getClass.getDeclaredFields.map(_.getName).toList zip query.productIterator.toList).filter {
-      case (_, v: Option[Any]) => v.nonEmpty
-      case _                   => true
-    }.map {
-      // Convert all durations to seconds in order to respect PromQL duration notation
-      // https://prometheus.io/docs/prometheus/latest/querying/basics/#time-durations
-      case (k, v: FiniteDuration)       => (k, s"${v.toSeconds}s")
-      case (k, Some(v: FiniteDuration)) => (k, s"${v.toSeconds}s")
+case class LabelsQuery(matches: Option[collection.Seq[String]], start: Option[Instant], end: Option[Instant])
+    extends PrometheusQuery {
+  override def formEncode(): immutable.Seq[(String, String)] =
+    immutable
+      .Seq[Option[(String, String)]](
+        start.map(s => ("start", s.toString)),
+        end.map(e => ("end", e.toString))
+      )
+      .collect {
+        case Some((k, v)) => (k, v)
+      } ++ (matches.getOrElse(Seq()).map(s => ("match[]", s)))
 
-      case (k, Some(v)) => (k, v.toString)
-      case (k, v)       => (k, v.toString)
-    }.toMap
+}
+
+case class LabelValuesQuery(
+  label: String,
+  matches: Option[collection.Seq[String]],
+  start: Option[Instant],
+  end: Option[Instant]
+) extends PrometheusQuery {
+
+  override def httpMethod(): Method = Method.GET
+
+  override def formEncode(): immutable.Seq[(String, String)] =
+    immutable
+      .Seq[Option[(String, String)]](
+        Some(("label", label)),
+        start.map(s => ("start", s.toString)),
+        end.map(e => ("end", e.toString))
+      )
+      .collect {
+        case Some((k, v)) => (k, v)
+      } ++ (matches.getOrElse(Seq()).map(s => ("match[]", s)))
+}
+
+object LabelValuesQuery {
+  def apply(label: String, start: Option[Instant], end: Option[Instant]): LabelValuesQuery =
+    LabelValuesQuery(label, None, start, end)
+
 }
 
 object RangeQuery {

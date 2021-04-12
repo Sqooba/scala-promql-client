@@ -1,7 +1,6 @@
 package io.sqooba.oss.promql
 
 import java.time.Instant
-
 import zio.test.Assertion.{ contains, equalTo, not }
 import zio.test._
 
@@ -16,11 +15,11 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
       val start   = Instant.ofEpochMilli(0)
       val end     = Instant.ofEpochMilli(10000)
       val query   = RangeQuery("""{}""", start, end, 10.seconds, None)
-      val encoded = PrometheusQuery.formEncode(query)
+      val encoded = query.formEncode()
 
-      assert(encoded.keySet)(not(contains("timeout"))) && assert(encoded)(
+      assert(encoded.map(_._1))(not(contains("timeout"))) && assert(encoded)(
         equalTo(
-          Map(
+          List(
             "query" -> "{}",
             "start" -> f"${start}",
             "end"   -> f"${end}",
@@ -32,21 +31,21 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
     },
     test("strip None option in instant query") {
       val query   = InstantQuery("""{}""", None, None)
-      val encoded = PrometheusQuery.formEncode(query)
+      val encoded = query.formEncode()
 
-      assert(encoded.keySet)(not(contains("time"))) &&
-      assert(encoded.keySet)(not(contains("timeout"))) &&
+      assert(encoded.map(_._1))(not(contains("time"))) &&
+      assert(encoded.map(_._1))(not(contains("timeout"))) &&
       assert(encoded)(
-        equalTo(Map("query" -> "{}"))
+        equalTo(List("query" -> "{}"))
       )
     },
     test("unwrap the options") {
       val query   = InstantQuery("""{}""", Some(Instant.ofEpochMilli(0)), Some(10.seconds))
-      val encoded = PrometheusQuery.formEncode(query)
+      val encoded = query.formEncode()
 
       assert(encoded)(
         equalTo(
-          Map(
+          List(
             "query" -> "{}",
             "time"  -> f"${Instant.ofEpochMilli(0)}",
             // NOTE: PromQL duration notation is required here
@@ -105,6 +104,97 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
       assert(queries.length)(equalTo(1)) &&
       assert(queries.head.start)(equalTo(start)) &&
       assert(queries.last.end)(equalTo(end))
+    },
+    test("labels query should set match array") {
+      val start = Instant.parse("2020-10-01T10:00:00Z")
+      val end   = Instant.parse("2020-10-01T10:01:01Z")
+      val query = LabelsQuery(
+        Some(
+          List(
+            "up",
+            """process_start_time_seconds{job="prometheus"}"""
+          )
+        ),
+        Some(start),
+        Some(end)
+      )
+
+      assert(query.formEncode())(
+        equalTo(
+          List(
+            ("start", "2020-10-01T10:00:00Z"),
+            ("end", "2020-10-01T10:01:01Z"),
+            ("match[]", "up"),
+            ("match[]", """process_start_time_seconds{job="prometheus"}""")
+          )
+        )
+      )
+    },
+    test("labels query should work without any parameter") {
+      val query = LabelsQuery(None, None, None)
+
+      assert(query.formEncode())(equalTo(List()))
+    },
+    test("series query should set match array") {
+      val start = Instant.parse("2020-10-01T10:00:00Z")
+      val end   = Instant.parse("2020-10-01T10:01:01Z")
+      val query = SeriesQuery(
+        List(
+          "up",
+          """process_start_time_seconds{job="prometheus"}"""
+        ),
+        start,
+        end
+      )
+
+      assert(query.formEncode())(
+        equalTo(
+          List(
+            ("start", "2020-10-01T10:00:00Z"),
+            ("end", "2020-10-01T10:01:01Z"),
+            ("match[]", "up"),
+            ("match[]", """process_start_time_seconds{job="prometheus"}""")
+          )
+        )
+      )
+    },
+    test("labelsvalues query should correctly encode its elements when none") {
+      val query = LabelValuesQuery(
+        "job",
+        None,
+        None,
+        None
+      )
+
+      assert(query.formEncode())(
+        equalTo(
+          List(
+            ("label", "job")
+          )
+        )
+      )
+    },
+    test("labelsvalues query should correctly encode its elements when all sets") {
+      val start = Instant.parse("2020-10-01T10:00:00Z")
+      val end   = Instant.parse("2020-10-01T10:01:01Z")
+      val query = LabelValuesQuery(
+        "job",
+        Some(Seq("up", "down")),
+        Some(start),
+        Some(end)
+      )
+
+      assert(query.formEncode().toSet)(
+        equalTo(
+          Set(
+            ("label", "job"),
+            ("start", "2020-10-01T10:00:00Z"),
+            ("end", "2020-10-01T10:01:01Z"),
+            ("match[]", "up"),
+            ("match[]", "down")
+          )
+        )
+      )
     }
   )
 }
