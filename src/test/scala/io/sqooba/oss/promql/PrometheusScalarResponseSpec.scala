@@ -45,7 +45,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
 
   val spec = suite("Scalar response decoder")(
     test("decode a integer response") {
-      val json = Source.fromResource("responses/scalars/ScalarInt").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarInt").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       assert(decodedResponse)(
@@ -53,7 +53,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
       )
     },
     test("decode a double response") {
-      val json = Source.fromResource("responses/scalars/ScalarDouble").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarDouble").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       assert(decodedResponse)(
@@ -61,7 +61,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
       )
     },
     test("decode a inf response") {
-      val json = Source.fromResource("responses/scalars/ScalarInfinity").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarInfinity").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       assert(decodedResponse)(
@@ -69,7 +69,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
       )
     },
     test("decode a minus inf response") {
-      val json = Source.fromResource("responses/scalars/ScalarMinInfinity").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarMinInfinity").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       assert(decodedResponse)(
@@ -77,7 +77,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
       )
     },
     test("decode a positive hex response") {
-      val json = Source.fromResource("responses/scalars/ScalarPlusHex").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarPlusHex").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       assert(decodedResponse)(
@@ -85,7 +85,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
       )
     },
     test("decode a negative hex response") {
-      val json = Source.fromResource("responses/scalars/ScalarMinusHex").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarMinusHex").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       assert(decodedResponse)(
@@ -93,7 +93,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
       )
     },
     test("decode a hex response") {
-      val json = Source.fromResource("responses/scalars/ScalarHex").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarHex").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       assert(decodedResponse)(
@@ -101,7 +101,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
       )
     },
     test("decode Nan") {
-      val json = Source.fromResource("responses/scalars/ScalarNan").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarNan").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       // Double.NaN != Double.Nan so we can't use the isScalarResponse here
@@ -110,7 +110,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
       )
     },
     test("decode negative Nan") {
-      val json = Source.fromResource("responses/scalars/ScalarMinusNan").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarMinusNan").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       assert(decodedResponse)(
@@ -119,7 +119,7 @@ class PrometheusScalarResponseSpec extends DefaultRunnableSpec {
 
     },
     test("decode positive Nan") {
-      val json = Source.fromResource("responses/scalars/ScalarPlusNan").mkString
+      val json            = Source.fromResource("responses/scalars/ScalarPlusNan").mkString
       val decodedResponse = decode[PrometheusResponse](json)
 
       assert(decodedResponse)(

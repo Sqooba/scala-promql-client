@@ -2,7 +2,7 @@ package io.sqooba.oss.promql
 
 import java.time.Instant
 
-import zio.test.Assertion.{contains, equalTo, not}
+import zio.test.Assertion.{ contains, equalTo, not }
 import zio.test._
 
 import scala.concurrent.duration.DurationInt
@@ -14,9 +14,9 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
 
   val spec = suite("encoder")(
     test("strip None Option in range query") {
-      val start = Instant.ofEpochMilli(0)
-      val end = Instant.ofEpochMilli(10000)
-      val query = RangeQuery("""{}""", start, end, 10.seconds, None)
+      val start   = Instant.ofEpochMilli(0)
+      val end     = Instant.ofEpochMilli(10000)
+      val query   = RangeQuery("""{}""", start, end, 10.seconds, None)
       val encoded = PrometheusQuery.formEncode(query)
 
       assert(encoded.keySet)(not(contains("timeout"))) && assert(encoded)(
@@ -24,7 +24,7 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
           Map(
             "query" -> "{}",
             "start" -> f"${start}",
-            "end" -> f"${end}",
+            "end"   -> f"${end}",
             // NOTE: PromQL duration notation is required here
             "step" -> "10s"
           )
@@ -32,7 +32,7 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
       )
     },
     test("strip None option in instant query") {
-      val query = InstantQuery("""{}""", None, None)
+      val query   = InstantQuery("""{}""", None, None)
       val encoded = PrometheusQuery.formEncode(query)
 
       assert(encoded.keySet)(not(contains("time"))) &&
@@ -42,14 +42,14 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
       )
     },
     test("unwrap the options") {
-      val query = InstantQuery("""{}""", Some(Instant.ofEpochMilli(0)), Some(10.seconds))
+      val query   = InstantQuery("""{}""", Some(Instant.ofEpochMilli(0)), Some(10.seconds))
       val encoded = PrometheusQuery.formEncode(query)
 
       assert(encoded)(
         equalTo(
           Map(
             "query" -> "{}",
-            "time" -> f"${Instant.ofEpochMilli(0)}",
+            "time"  -> f"${Instant.ofEpochMilli(0)}",
             // NOTE: PromQL duration notation is required here
             "timeout" -> "10s"
           )
@@ -57,16 +57,16 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
       )
     },
     test("create sub-queries") {
-      val start = Instant.parse("2020-10-01T00:00:00Z")
-      val end = Instant.parse("2020-10-01T00:00:50Z")
-      val step = 10.seconds
-      val query = RangeQuery("", start, end, step, None)
+      val start   = Instant.parse("2020-10-01T00:00:00Z")
+      val end     = Instant.parse("2020-10-01T00:00:50Z")
+      val step    = 10.seconds
+      val query   = RangeQuery("", start, end, step, None)
       val queries = RangeQuery.splitRangeQuery(query, 3)
 
       // We want a sampling of at most 3 points, with a step of 10 seconds
-      val first = RangeQuery("", start, start.plusSeconds(10 * 2), step, None)
+      val first  = RangeQuery("", start, start.plusSeconds(10 * 2), step, None)
       val second = RangeQuery("", first.end, start.plusSeconds(10 * 4), step, None)
-      val third = RangeQuery("", second.end, end, step, None)
+      val third  = RangeQuery("", second.end, end, step, None)
 
       assert(queries.length)(equalTo(3)) &&
       assert(queries)(
@@ -76,9 +76,9 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
       )
     },
     test("correctly split the query") {
-      val start = Instant.parse("2020-10-01T10:00:00Z")
-      val end = Instant.parse("2020-10-01T14:00:01Z")
-      val query = RangeQuery("", start, end, 10.seconds, None)
+      val start   = Instant.parse("2020-10-01T10:00:00Z")
+      val end     = Instant.parse("2020-10-01T14:00:01Z")
+      val query   = RangeQuery("", start, end, 10.seconds, None)
       val queries = RangeQuery.splitRangeQuery(query, 14)
 
       /*
@@ -92,9 +92,9 @@ class PrometheusQuerySpec extends DefaultRunnableSpec {
       assert(queries.last.end)(equalTo(end))
     },
     test("return a single query if not split") {
-      val start = Instant.parse("2020-10-01T10:00:00Z")
-      val end = Instant.parse("2020-10-01T10:01:01Z")
-      val query = RangeQuery("", start, end, 10.seconds, None)
+      val start   = Instant.parse("2020-10-01T10:00:00Z")
+      val end     = Instant.parse("2020-10-01T10:01:01Z")
+      val query   = RangeQuery("", start, end, 10.seconds, None)
       val queries = RangeQuery.splitRangeQuery(query, maxSample = 14)
 
       /*

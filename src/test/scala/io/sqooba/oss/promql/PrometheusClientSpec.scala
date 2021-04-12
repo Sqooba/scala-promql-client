@@ -3,10 +3,10 @@ package io.sqooba.oss.promql
 import io.circe.syntax._
 import io.circe.parser.decode
 import PrometheusTestUtils._
-import sttp.client.{Response, StringBody}
+import sttp.client.{ Response, StringBody }
 import java.time.Instant
 
-import io.sqooba.oss.promql.metrics.{MatrixMetric, PrometheusInsertMetric}
+import io.sqooba.oss.promql.metrics.{ MatrixMetric, PrometheusInsertMetric }
 import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
 import sttp.model.StatusCode
 import sttp.model.Uri.QuerySegment.KeyValue
@@ -35,9 +35,9 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
         val request = PrometheusService.put(twoPointSequence)
         val scenario = for {
           _ <- whenRequestMatches(_.body match {
-            case StringBody(s, _, _) => s.split("\n").length == 2
-            case _                   => false
-          }).thenRespondOk
+                 case StringBody(s, _, _) => s.split("\n").length == 2
+                 case _                   => false
+               }).thenRespondOk
           resp <- request
         } yield resp
 
@@ -49,19 +49,19 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
 
         val scenario = for {
           _ <- whenRequestMatches(req =>
-            req.body match {
-              case StringBody(s, _, _) =>
-                val dataPoints = s.split("\n")
-                dataPoints.length == 2 &&
-                dataPoints.zipWithIndex.forall {
-                  case (point, idx) =>
-                    val decoded = decode[PrometheusInsertMetric](point).toOption.get
-                    decoded == customSequence(idx) &&
-                    decoded.metric("customtag") == "value"
-                }
-              case _ => false
-            }
-          ).thenRespondOk
+                 req.body match {
+                   case StringBody(s, _, _) =>
+                     val dataPoints = s.split("\n")
+                     dataPoints.length == 2 &&
+                     dataPoints.zipWithIndex.forall {
+                       case (point, idx) =>
+                         val decoded = decode[PrometheusInsertMetric](point).toOption.get
+                         decoded == customSequence(idx) &&
+                         decoded.metric("customtag") == "value"
+                     }
+                   case _ => false
+                 }
+               ).thenRespondOk
           resp <- PrometheusService.put(customSequence)
         } yield resp
 
@@ -70,7 +70,7 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
       },
       testM("return the number of inserted points") {
         val scenario = for {
-          _ <- whenAnyRequest.thenRespondOk
+          _    <- whenAnyRequest.thenRespondOk
           resp <- PrometheusService.put(twoPointSequence)
         } yield resp
 
@@ -83,7 +83,7 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
       testM("correctly add the parameters") {
         val scenario = for {
           _ <- whenAnyRequest
-            .thenRespond(twoPointSequence.map(_.asJson.noSpaces).mkString("\n"))
+                 .thenRespond(twoPointSequence.map(_.asJson.noSpaces).mkString("\n"))
           resp <- PrometheusService.export("""{__name__!=""}""", None, None)
         } yield resp
 
@@ -93,21 +93,21 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
       },
       testM("include the start and end timestamp") {
         val start = Instant.parse("2020-08-01T00:00:00Z")
-        val end = Instant.parse("2020-08-08T00:00:00Z")
-        val data = twoPointSequence
+        val end   = Instant.parse("2020-08-08T00:00:00Z")
+        val data  = twoPointSequence
 
         val scenario = for {
           _ <- whenRequestMatches { req =>
-            val params = req.uri.querySegments.collect {
-              case KeyValue(k, v, _, _) => k -> v
-            }.toMap
+                 val params = req.uri.querySegments.collect {
+                   case KeyValue(k, v, _, _) => k -> v
+                 }.toMap
 
-            params == Map(
-              "match[]" -> """{__name__!=""}""",
-              "from" -> f"$start",
-              "to" -> f"$end"
-            )
-          }.thenRespond(data.map(_.asJson.noSpaces).mkString("\n"))
+                 params == Map(
+                   "match[]" -> """{__name__!=""}""",
+                   "from"    -> f"$start",
+                   "to"      -> f"$end"
+                 )
+               }.thenRespond(data.map(_.asJson.noSpaces).mkString("\n"))
           resp <- PrometheusService.export("""{__name__!=""}""", Some(start), Some(end))
         } yield resp
 
@@ -118,18 +118,18 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
     suite("client")(
       testM("correctly put application errors in the type") {
         val start = Instant.parse("2020-08-01T00:00:00Z")
-        val end = Instant.parse("2020-08-08T00:00:00Z")
+        val end   = Instant.parse("2020-08-08T00:00:00Z")
 
         val scenario = for {
           _ <- whenAnyRequest.thenRespond(
-            Right(
-              decode[PrometheusResponse](
-                Source
-                  .fromResource("responses/PrometheusResponseError")
-                  .mkString
-              ).toOption.get
-            )
-          )
+                 Right(
+                   decode[PrometheusResponse](
+                     Source
+                       .fromResource("responses/PrometheusResponseError")
+                       .mkString
+                   ).toOption.get
+                 )
+               )
           resp <- PrometheusService.query(RangeQuery("""{__name__!=""}""", start, end, 10.seconds, None)).run
         } yield resp
 
@@ -144,9 +144,9 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
       },
       testM("reports HTTP error") {
         val start = Instant.parse("2020-08-01T00:00:00Z")
-        val end = Instant.parse("2020-08-08T00:00:00Z")
+        val end   = Instant.parse("2020-08-08T00:00:00Z")
         val scenario = for {
-          _ <- whenAnyRequest.thenRespondServerError()
+          _    <- whenAnyRequest.thenRespondServerError()
           resp <- PrometheusService.query(RangeQuery("""{__name__!=""}""", start, end, 10.seconds, None)).run
         } yield resp
 
@@ -158,9 +158,9 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
       },
       testM("returns empty dataset") {
         val start = Instant.parse("2020-09-01T00:00:00Z")
-        val end = Instant.parse("2020-09-08T00:00:00Z")
+        val end   = Instant.parse("2020-09-08T00:00:00Z")
         val scenario = for {
-          _ <- whenAnyRequest.thenRespond(Right(createSuccessResponse(start, Seq(), 10.seconds)))
+          _    <- whenAnyRequest.thenRespond(Right(createSuccessResponse(start, Seq(), 10.seconds)))
           resp <- PrometheusService.query(RangeQuery("""{__name__!=""}""", start, end, 10.seconds, None)).run
         } yield resp
 
@@ -186,7 +186,7 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
       },
       testM("concatenate the datapoint") {
         val start = Instant.parse("2020-08-01T00:00:00Z")
-        val step = 10.minutes
+        val step  = 10.minutes
 
         /**
          * This test is creating a very prometheus specific condition.
@@ -195,8 +195,8 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
          *  because timestamp should not be duplicated (query splitting should be transparent)
          */
         val scenario = for {
-          _ <- whenAnyRequest.thenRespondWrapped {
-            req =>
+          _ <-
+            whenAnyRequest.thenRespondWrapped { req =>
               IO {
                 req.body match {
                   case StringBody(s, _, _) if s.contains("start=2020-08-01T00%3A00%3A00Z") =>
@@ -235,21 +235,21 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
                   case _ => Response(Left("We are expecting a string body"), InternalServerError)
                 }
               }
-          }
+            }
           resp <- PrometheusService.query(
-            RangeQuery(
-              """WGRI_W_10m_Avg""",
-              start,
-              start.plusSeconds(5 * step.toSeconds),
-              step,
-              None
-            )
-          )
+                    RangeQuery(
+                      """WGRI_W_10m_Avg""",
+                      start,
+                      start.plusSeconds(5 * step.toSeconds),
+                      step,
+                      None
+                    )
+                  )
         } yield resp
 
         val env = (ZLayer.succeed(
-            config.copy(maxPointsPerTimeseries = 3)
-          ) ++ AsyncHttpClientZioBackend.stubLayer) >+> PrometheusClient.live
+          config.copy(maxPointsPerTimeseries = 3)
+        ) ++ AsyncHttpClientZioBackend.stubLayer) >+> PrometheusClient.live
         val effect = scenario.provideLayer(env)
 
         assertM(effect)(
