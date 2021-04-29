@@ -16,7 +16,7 @@ It is in a draft state at the moment: we will avoid deep API changes if possible
 The library is available on sonatype, to use it in an SBT project add the following line:
 
 ```scala
-libraryDependencies += "io.sqooba.oss" %% "scala-promql-client" % "0.4.0"
+libraryDependencies += "io.sqooba.oss" %% "scala-promql-client" % "0.5.0"
 ```
 
 For maven:
@@ -25,7 +25,7 @@ For maven:
 <dependency>
     <groupId>io.sqooba.oss</groupId>
     <artifactId>scala-promql-client_2.13</artifactId>
-    <version>0.4.0</version>
+    <version>0.5.0</version>
 </dependency>
 ```
 
