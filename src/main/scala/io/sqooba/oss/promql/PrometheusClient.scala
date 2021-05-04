@@ -155,7 +155,7 @@ class PrometheusClient(
     val body              = promQuery.formEncode()
 
     val httpQuery = basicRequest
-      .body(body, TKT-XXX)
+      .body(body, "utf-8")
       .contentType(MediaType.ApplicationXWwwFormUrlencoded)
       .post(httpQueryEndpoint)
       .response(asJson[PrometheusResponse])
@@ -170,7 +170,7 @@ class PrometheusClient(
 
     val httpQuery = basicRequest
       .contentType(MediaType.ApplicationXWwwFormUrlencoded)
-      .body(body, TKT-XXX)
+      .body(body, "utf-8")
       .post(queryEndpoint)
       .response(asJson[PrometheusResponse])
 
@@ -190,7 +190,7 @@ class PrometheusClient(
         basicRequest
           .contentType(MediaType.ApplicationXWwwFormUrlencoded)
           .method(promQuery.httpMethod(), queryEndpoint)
-          .body(body, TKT-XXX)
+          .body(body, "utf-8")
     }).response(promQuery match {
       case _ => asJson[PrometheusResponse]
     })
