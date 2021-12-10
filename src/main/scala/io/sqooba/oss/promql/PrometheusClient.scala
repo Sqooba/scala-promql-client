@@ -34,7 +34,9 @@ class PrometheusClient(
 ) extends PrometheusService.Service
     with LazyLogging {
 
-  private val endpoint = uri"http://${config.host}:${config.port}"
+  private val scheme = if (config.ssl) "https" else "http"
+
+  private[promql] val endpoint = uri"${scheme}://${config.host}:${config.port}"
   logger.info(s"Sending to endpoint $endpoint")
   private val importEndpoint = endpoint.path("/api/v1/import")
   logger.info(s"Import endpoint is $importEndpoint")

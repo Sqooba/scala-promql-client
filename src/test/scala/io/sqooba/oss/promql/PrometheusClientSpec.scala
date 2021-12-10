@@ -3,7 +3,9 @@ package io.sqooba.oss.promql
 import io.circe.syntax._
 import io.circe.parser.decode
 import PrometheusTestUtils._
+import io.sqooba.oss.promql.PrometheusService.PrometheusService
 import sttp.client.{ Response, StringBody }
+
 import java.time.Instant
 import io.sqooba.oss.promql.metrics.{ MatrixMetric, PrometheusInsertMetric }
 import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
@@ -27,13 +29,44 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
     PrometheusClientConfig(
       "test",
       port = 12,
+      ssl = false,
+      maxPointsPerTimeseries = 1000,
+      retryNumber = 1,
+      parallelRequests = 5
+    )
+
+  private val sslConfig =
+    PrometheusClientConfig(
+      "test",
+      port = 12,
+      ssl = true,
       maxPointsPerTimeseries = 1000,
       retryNumber = 1,
       parallelRequests = 5
     )
   private val env = (ZLayer.succeed(config) ++ AsyncHttpClientZioBackend.stubLayer) >+> PrometheusClient.live
 
-  val spec = suite("VictoriaMetricsClient")(
+  private val sslEnv = (ZLayer.succeed(sslConfig) ++ AsyncHttpClientZioBackend.stubLayer) >+> PrometheusClient.live
+
+  val spec = suite("PrometheusClient")(
+    suite("configuration")(
+      testM("correctly read the ssl flag if it is set") {
+        (for {
+          cfg    <- ZIO.access[Has[PrometheusClientConfig]](_.get)
+          client <- ZIO.access[PrometheusService](_.get.asInstanceOf[PrometheusClient])
+        } yield assert(cfg.ssl)(equalTo(true))
+          && assert(client.endpoint.toString())(equalTo("https://test:12")))
+          .provideLayer(sslEnv)
+      },
+      testM("correctly default to http if the ssl flag is not set") {
+        (for {
+          cfg    <- ZIO.access[Has[PrometheusClientConfig]](_.get)
+          client <- ZIO.access[PrometheusService](_.get.asInstanceOf[PrometheusClient])
+        } yield assert(cfg.ssl)(equalTo(false))
+          && assert(client.endpoint.toString())(equalTo("http://test:12")))
+          .provideLayer(env)
+      }
+    ),
     suite("put")(
       testM("create a stream of JSON to insert data") {
         val request = PrometheusService.put(twoPointSequence)
