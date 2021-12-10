@@ -25,8 +25,8 @@ lazy val root =
       ),
       publishArtifact := true,
       testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
-      scalaVersion := "2.13.3",
-      crossScalaVersions := Seq("2.12.12", "2.13.3")
+      scalaVersion := "2.13.7",
+      crossScalaVersions := Seq("2.12.15", "2.13.7")
     )
 
 // *****************************************************************************
@@ -37,11 +37,11 @@ lazy val library =
   new {
 
     object Version {
-      val zio                 = "1.0.3"
-      val sttp                = "2.2.8"
-      val circe               = "0.13.0"
-      val scalaLogging        = "3.9.2"
-      val typesafeConfig      = "1.4.0"
+      val zio                 = "1.0.12"
+      val sttp                = "2.2.10"
+      val circe               = "0.14.1"
+      val scalaLogging        = "3.9.4"
+      val typesafeConfig      = "1.4.1"
       val testContainersScala = "0.38.9"
 
     }
