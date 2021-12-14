@@ -9,6 +9,8 @@ This is **not** a library to instrument your scala application.
 This library is relied on in contexts where we use a Prometheus instance as a time-series store
 and wish to run queries for analytical purposes from a Scala application.
 
+Some commands are specific to the promQL compatible VictoriaMetrics server and not supported in the original Prometheus server though.
+
 It is in a draft state at the moment: we will avoid deep API changes if possible, but can't exclude them.
 
 # Installation
@@ -59,7 +61,7 @@ Both `live` methods inside the `PrometheusClient` object can be used to create a
 
 ## Importing data
 
-`PrometheusService` has a `put` method that can be used to insert datapoints inside Prometheus, it can be used that way:
+`PrometheusService` has a `put` method that can be used to insert datapoints inside VictoriaMetrics, it can be used that way:
 
 ```scala
 import java.time.Instant
@@ -92,6 +94,8 @@ object Main extends zio.App {
 ```
 
 This will insert three points with value 1, 2 and 3 for the last three minutes.
+
+Prometheus does not support manually importing, other than [backfilling](https://medium.com/tlvince/prometheus-backfilling-a92573eb712c).
 
 #### Addings tags
 
@@ -163,6 +167,67 @@ for {
 
 Don't forget to pattern match and provide for a regular `case _`. Meta queries have to deal with empty responses by the means of the EmptyResponseData type.
 
+# Testing
+
+## Container based testing
+
+Most unit tests are run against mocked data. Basing your "*Spec" suite object on
+`io.sqooba.oss.promql_container.PromClientRunnable` instead instanciates a fresh docker container for every test.
+
+Note that the OSAG CI pipeline currently does not execute Docker-based unit tests!
+
+## Multiple container versions
+To account for potentially different behaviour of various versions of VictoriaMetrics,
+use  for a check against a single version or [MultiVersionVictoriaClientRunnable](file://./io/sqooba/oss/promql/testutils/MultiVersionVictoriaClientRunnable.scala)
+to run the whole suite of tests against a list of versions at once.
+
+The [MultiVersionPromClientRunnable](file://./io/sqooba/oss/promql/testutils/MultiVersionPromClientRunnable.scala)
+will instantiate a original Prometheus container. Obviously, the "put" command will fail on this one.
+As an alternative, the contents of the [metrics resource file](src/test/resources/metrics) is pre-loaded.
+
+Currently, in this library, the [Victoriametetrics versions](https://github.com/VictoriaMetrics/VictoriaMetrics/releases) "v1.47.0", "v1.53.1", "v1.61.1" are checked by default.
+
+## Starting tests
+
+The tests involving containers will be run by `sbt test`.
+
+However, the following JUnit tests have to be started manually (e.g "run" in your favourite IDE), because `sbt test` will not pick them up:
+* PrometheusClientSpec
+* PrometheusInsertMetricSpec
+* PrometheusQuerySpec
+* PrometheusResponseSpec
+* PrometheusScalarResponseSpec
+
+The reason is the ZIO-Testrunner annotation. We haven't found a way to marry it with sbt and JUnit.
+
+### Example
+
+use the multi version facility by specifying your test suite as :
+
+```object PrometheusAppSpec extends MultiVersionPromClientRunnable {```
+
+optionally giving a custom list of Versions for your test suite :
+
+```override val versions: Seq[String] = Seq("v1.61.1")```
+
+When using higher level clients that use a promql-client layer,
+you can define a new *Runnable class extending the MultiVersionPromClient
+with your needed Environment Layers. (e.g. for Chronos):
+```
+abstract class ChronosRunnable extends MultiVersionPromClient[ChronosEnv] {
+  override val versions: Seq[String] = Seq("v1.42.0", "v1.47.0", "v1.53.1", "v1.61.1")
+
+  type ChronosRunnable = ZSpec[ChronosEnv, Any]
+
+  /**
+   * Create a test environment by spawning a VictoriaMetrics container, building a client configuration
+   * as well as a ChronosClient to be used by the tests
+   */
+  override def buildLayer(v: String): ULayer[ChronosEnv] =
+    victoriaLayer(v) >+> ChronosClient.live
+
+}
+```
 
 # Versions and releases
 

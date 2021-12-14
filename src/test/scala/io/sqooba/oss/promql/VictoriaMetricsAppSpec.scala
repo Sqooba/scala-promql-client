@@ -4,17 +4,20 @@ import io.sqooba.oss.promql.PrometheusService.PrometheusService
 import zio.test.Assertion
 import zio.test.Assertion.{ contains, equalTo, hasSize, isSubtype }
 import io.sqooba.oss.promql.metrics.MatrixMetric
-import io.sqooba.oss.utils.PromClientRunnable
+import io.sqooba.oss.utils.VictoriaClientRunnable.PromClientEnv
+import io.sqooba.oss.utils.MultiVersionVictoriaClientRunnable
 import io.sqooba.oss.utils.Utils.{ insertFakePercentage, randomOtherLabelTS }
 import zio.ZIO
-import zio.test.{ assert, suite, testM }
+import zio.test._
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
 
-object PrometheusAppSpec extends PromClientRunnable {
+object VictoriaMetricsAppSpec extends MultiVersionVictoriaClientRunnable {
 
-  val spec: PromClientRunnable = suite("VictoriaMetricsApp")(
+  override val versions: Seq[String] = Seq("v1.61.1", "v1.53.1")
+
+  val spec: Spec[PromClientEnv, TestFailure[Throwable], TestSuccess] = suite("VictoriaMetricsApp")(
     suite("put")(
       testM("Should retrieve the inserted points") {
         val start = Instant.parse("2020-12-12T00:00:00.000Z")
@@ -48,8 +51,7 @@ object PrometheusAppSpec extends PromClientRunnable {
           val compatibleSerie = relevantMetrics.head.values.map(i => (i._1, i._2.toDouble))
           // MatrixMetrics are Strings, in order to compare, we have to convert them back to Double
           // exceptionally, this is safe, because the generating function  Utils.randomBetween casts these Doubles from Int values.
-          val exclusiveEnd = compatibleSerie.slice(0, compatibleSerie.size - 1)
-          exclusiveEnd // insertFakePercentage is exclusive end, RangeQuery is inclusive, hence generates one more result than was stored
+          compatibleSerie
         })(
           equalTo( // Seq[Long, Double]
             metrics.timestamps
@@ -251,9 +253,8 @@ object PrometheusAppSpec extends PromClientRunnable {
           assert(result.asInstanceOf[StringListResponseData].data)(
             contains[String]("__name__") && contains[String]("type")
           )
-      }
-      /*,
-      testM("should find only the inserted Label, over all time, no specifying start & end") {
+      },
+      testM("should find only the inserted Label, over all time, not specifying start & end") {
         // FIXME: This Test succeeds for Prometheus, but fails for Victoria Metrics - not sure how to handle it
         // in the context of these Test Suites. A separate Promnetheus Ruinner ?
         val start = Instant.parse("2020-12-12T00:00:00.000Z")
@@ -264,10 +265,9 @@ object PrometheusAppSpec extends PromClientRunnable {
         val queryFromProm: ZIO[PrometheusService, PrometheusError, ResponseData] =
           PrometheusService.query(
             LabelsQuery(
-              matches = Some(
-                Seq("{__name__=~\"c.*\"}")
-              ), // the Regexp-match for "..*" is specific for Prometheus, which has a fool-guard preventing you from querying all series and possibly impacting production performance severely. Victoria-metrics does not implement this feature of the API.
-              None, None
+              matches = None,
+              None,
+              None
             )
           )
 
@@ -295,7 +295,7 @@ object PrometheusAppSpec extends PromClientRunnable {
 
 
         }
-      } */
+      }
 
     ),
     suite("labels values Queries")(

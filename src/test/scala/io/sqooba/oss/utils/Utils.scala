@@ -3,10 +3,11 @@ package io.sqooba.oss.utils
 import io.sqooba.oss.promql.PrometheusService
 import io.sqooba.oss.promql.PrometheusService.PrometheusService
 import io.sqooba.oss.promql.metrics.PrometheusInsertMetric
-import zio._
+import zio.duration.durationInt
+import zio.{ IO, ZIO }
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
 
 object Utils {
 

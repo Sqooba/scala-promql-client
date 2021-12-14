@@ -107,7 +107,7 @@ class PrometheusClient(
    * @param to to optional end limit for the exported data
    * @return an error or a sequence of raw datapoints
    */
-  def export(
+  def `export`(
     query: String,
     from: Option[Instant],
     to: Option[Instant]

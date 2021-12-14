@@ -225,7 +225,7 @@ class PrometheusClientSpec extends DefaultRunnableSpec {
         val start = Instant.parse("2020-08-01T00:00:00Z")
         val step = 10.minutes
 
-        /**
+        /*
          * This test is creating a very prometheus specific condition.
          * When splitting the request, the last data point of the Nth query will be the same as
          * the first datapoint of the N+1 query, we need to take care of that during a merge
