@@ -49,11 +49,32 @@ The `PrometheusClient.liveDefault` method will look inside `application.conf` fo
 promql-client {
     host = localhost
     port = 8428
+    ssl = false
     maxPointsPerTimeseries = 30000
     retryNumber = 3
     parallelRequests = 1
 }
 ```
+For authentication add a sub-configuration section such as :
+```
+promql-client {
+  ...
+  //------------------
+  auth-basic-credentials {
+    kind: "basic"
+    username: "username"
+    password: "password"
+  }
+  //------- OR -------
+  auth-basic-token {
+    token: "xxxx"
+  }
+  //------- OR -------
+  auth-bearer {
+    bearer: "xxxxx"
+  }
+```
+
 
 Both `live` methods inside the `PrometheusClient` object can be used to create a layer providing a `PrometheusService` given a configuration.
 
