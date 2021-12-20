@@ -61,7 +61,6 @@ promql-client {
   ...
   //------------------
   auth-basic-credentials {
-    kind: "basic"
     username: "username"
     password: "password"
   }
