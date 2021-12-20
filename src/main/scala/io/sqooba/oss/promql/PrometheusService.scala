@@ -16,7 +16,7 @@ object PrometheusService {
   trait Service {
     def put(dataPoints: Seq[PrometheusInsertMetric]): IO[PrometheusClientError, Int]
     def query(query: PrometheusQuery): IO[PrometheusError, ResponseData]
-    def export(
+    def `export`(
       query: String,
       from: Option[Instant],
       to: Option[Instant]
@@ -67,7 +67,7 @@ object PrometheusService {
    *         query on the backend, the expected errors will be converted to a type of [[PrometheusClientError]].
    *         Other exceptions are kept unchanged.
    */
-  def export(
+  def `export`(
     query: String,
     from: Option[Instant],
     to: Option[Instant]

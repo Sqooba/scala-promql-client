@@ -3,6 +3,12 @@ package io.sqooba.oss.promql
 import com.typesafe.config.Config
 import zio.{ Has, RLayer, Task, ZLayer }
 
+sealed trait PrometheusClientAuth
+
+case class PrometheusClientAuthBasicCredential(username:String, password: String) extends PrometheusClientAuth
+case class PrometheusClientAuthBasicToken(token:String) extends PrometheusClientAuth
+case class PrometheusClientAuthBearer(bearer:String) extends PrometheusClientAuth
+
 /**
  * @param host  server's hostname or ip
  * @param port server's port
@@ -16,36 +22,39 @@ case class PrometheusClientConfig(
   ssl: Boolean,
   maxPointsPerTimeseries: Int,
   retryNumber: Int,
-  parallelRequests: Int
+  parallelRequests: Int,
+  auth: Option[PrometheusClientAuth]=None
 )
 
 object PrometheusClientConfig {
 
-  /**
-   * Shameful late addition of the SSL support: there might be a more elegant way of
-   * supporting default options, but for now we'll stick with this.
-   *
-   * We can consider defaulting to true at some point, though the most likely worst case is that
-   * clients connect to an https endpoint using http, which will fail.
-   *
-   * @return true if the config contains `ssl = true`, false otherwise.
-   */
-  private def readSslFlag(config: Config): Boolean =
-    if (config.hasPath("ssl")) {
-      config.getBoolean("ssl")
-    } else {
-      false
-    }
+  def decodeAuthConfig(config: Config):Option[PrometheusClientAuth] = {
+    if (config.hasPath("auth-basic-credentials")) {
+      val subConfig = config.getConfig("auth-basic-credentials")
+      val username = subConfig.getString("username")
+      val password = subConfig.getString("password")
+      Some(PrometheusClientAuthBasicCredential(username, password))
+    } else if (config.hasPath("auth-basic-token")) {
+      val subConfig = config.getConfig("auth-basic-token")
+      val token = subConfig.getString("token")
+      Some(PrometheusClientAuthBasicToken(token))
+    } else if (config.hasPath("auth-bearer")) {
+      val subConfig = config.getConfig("auth-bearer")
+      val bearer = subConfig.getString("bearer")
+      Some(PrometheusClientAuthBearer(bearer))
+    } else None
+  }
 
   def from(config: Config): Task[PrometheusClientConfig] =
     Task {
       PrometheusClientConfig(
         config.getString("host"),
         config.getInt("port"),
-        readSslFlag(config),
+        config.getBoolean("ssl"),
         config.getInt("maxPointsPerTimeseries"),
         config.getInt("retryNumber"),
-        config.getInt("parallelRequests")
+        config.getInt("parallelRequests"),
+        decodeAuthConfig(config)
       )
     }
 
@@ -54,10 +63,11 @@ object PrometheusClientConfig {
       PrometheusClientConfig(
         config.getString("host"),
         config.getInt("port"),
-        readSslFlag(config),
+        config.getBoolean("ssl"),
         config.getInt("max-points-per-timeseries"),
         config.getInt("retry-number"),
-        config.getInt("parallel-requests")
+        config.getInt("parallel-requests"),
+        decodeAuthConfig(config)
       )
     }
 
