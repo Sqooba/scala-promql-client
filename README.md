@@ -63,16 +63,21 @@ promql-client {
   auth-basic-credentials {
     username: "username"
     password: "password"
+    password: ${?PROMQL_CLIENT_AUTH_BASIC_PASSWORD}
   }
   //------- OR -------
   auth-basic-token {
     token: "xxxx"
+    token: ${?PROMQL_CLIENT_AUTH_BASIC_TOKEN}
   }
   //------- OR -------
   auth-bearer {
     bearer: "xxxxx"
+    bearer: ${?PROMQL_CLIENT_AUTH_BASIC_BEARER}
   }
 ```
+Note : Prefer the use of environment variables to provide secrets to your application, such as `PROMQL_CLIENT_AUTH_BASIC_PASSWORD`
+in the previous example. Your can rename those example environment variable as you wish. 
 
 
 Both `live` methods inside the `PrometheusClient` object can be used to create a layer providing a `PrometheusService` given a configuration.
