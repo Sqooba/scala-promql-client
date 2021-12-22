@@ -1,6 +1,7 @@
 package io.sqooba.oss.promql
 
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.LazyLogging
 import zio.{Has, RLayer, Task, ZLayer}
 
 sealed trait PrometheusClientAuth
@@ -27,23 +28,45 @@ case class PrometheusClientConfig(
   auth: Option[PrometheusClientAuth]=None
 )
 
-object PrometheusClientConfig {
+object PrometheusClientConfig extends LazyLogging {
 
-  def decodeAuthConfig(config: Config):Option[PrometheusClientAuth] = {
-    if (config.hasPath("auth-basic-credentials")) {
-      val subConfig = config.getConfig("auth-basic-credentials")
+  private def getSubConfig(config:Config, path:String):Option[Config] = {
+    if (config.hasPath(path)) Some(config.getConfig(path))
+    else None
+  }
+
+  def decodeAuthBasicCredential(config:Config):Option[PrometheusClientAuthBasicCredential] = {
+    getSubConfig(config, "auth-basic-credentials").map{subConfig =>
       val username = subConfig.getString("username")
       val password = subConfig.getString("password")
-      Some(PrometheusClientAuthBasicCredential(username, password))
-    } else if (config.hasPath("auth-basic-token")) {
-      val subConfig = config.getConfig("auth-basic-token")
+      PrometheusClientAuthBasicCredential(username, password)
+    }
+  }
+
+  def decodeAuthBasicToken(config: Config): Option[PrometheusClientAuthBasicToken] = {
+    getSubConfig(config, "auth-basic-token").map{ subConfig =>
       val token = subConfig.getString("token")
-      Some(PrometheusClientAuthBasicToken(token))
-    } else if (config.hasPath("auth-bearer")) {
-      val subConfig = config.getConfig("auth-bearer")
+      PrometheusClientAuthBasicToken(token)
+    }
+  }
+
+  def decodeAuthBearer(config: Config): Option[PrometheusClientAuthBearer] = {
+    getSubConfig(config, "auth-bearer").map { subConfig =>
       val bearer = subConfig.getString("bearer")
-      Some(PrometheusClientAuthBearer(bearer))
-    } else None
+      PrometheusClientAuthBearer(bearer)
+    }
+  }
+
+  def decodeAuthConfig(config: Config):Option[PrometheusClientAuth] = {
+    val foundAuthConfig =
+      List.empty[PrometheusClientAuth]:++decodeAuthBearer(config):++decodeAuthBasicToken(config):++decodeAuthBasicCredential(config)
+    if (foundAuthConfig.size>1) {
+      logger.warn(
+        "Ignoring authentication as you've provided %d authentication configurations"
+          .formatted(foundAuthConfig.size)
+      )
+      None
+    } else foundAuthConfig.headOption
   }
 
   /**
