@@ -79,7 +79,7 @@ promql-client {
   }
 ```
 Note : Prefer the use of environment variables to provide secrets to your application, such as `PROMQL_CLIENT_AUTH_BASIC_PASSWORD`
-in the previous example. Your can rename those example environment variable as you wish. 
+in the previous example. Your can rename those example environment variables as you wish. 
 
 
 Both `live` methods inside the `PrometheusClient` object can be used to create a layer providing a `PrometheusService` given a configuration.
