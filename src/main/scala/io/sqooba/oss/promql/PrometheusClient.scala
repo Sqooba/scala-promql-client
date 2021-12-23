@@ -41,6 +41,14 @@ class PrometheusClient(
   private val importEndpoint = endpoint.path("/api/v1/import")
   logger.info(s"Import endpoint is $importEndpoint")
 
+  def basicRequestCommon(config:PrometheusClientConfig) =
+    config.auth match {
+      case None => basicRequest
+      case Some(auth:PrometheusClientAuthBasicCredential) => basicRequest.auth.basic(auth.username, auth.password)
+      case Some(auth:PrometheusClientAuthBasicToken) => basicRequest.auth.basicToken(auth.token)
+      case Some(auth:PrometheusClientAuthBearer) => basicRequest.auth.bearer(auth.bearer)
+    }
+
   /**
    * Prometheus is usually pull based (it scrapes the data from the defined sources)
    * This method can be used to push data into prometheus instead
@@ -51,7 +59,8 @@ class PrometheusClient(
   def put(dataPoints: Seq[PrometheusInsertMetric]): IO[PrometheusClientError, Int] = {
 
     val toPost = dataPoints.map(_.asJson.noSpaces).mkString("\n")
-    val request = basicRequest
+    val request =
+      basicRequestCommon(config)
       .body(toPost)
       .post(importEndpoint)
 
@@ -140,7 +149,7 @@ class PrometheusClient(
       .params(params)
     logger.info(s"Export endpoint is $exportEndpoint")
 
-    val request = basicRequest.get(exportEndpoint)
+    val request = basicRequestCommon(config).get(exportEndpoint)
 
     SttpClient
       .send(request)
@@ -170,11 +179,12 @@ class PrometheusClient(
     val queryEndpoint = endpoint.path("/api/v1/query_range")
     val body          = promQuery.formEncode()
 
-    val httpQuery = basicRequest
-      .contentType(MediaType.ApplicationXWwwFormUrlencoded)
-      .body(body, "utf-8")
-      .post(queryEndpoint)
-      .response(asJson[PrometheusResponse])
+    val httpQuery =
+      basicRequestCommon(config)
+        .contentType(MediaType.ApplicationXWwwFormUrlencoded)
+        .body(body, "utf-8")
+        .post(queryEndpoint)
+        .response(asJson[PrometheusResponse])
 
     val response = SttpClient.send(httpQuery).provide(client)
     handleQueryError(response)
@@ -186,10 +196,10 @@ class PrometheusClient(
 
     val httpQuery = (promQuery.httpMethod() match {
       case Method.GET =>
-        basicRequest
+        basicRequestCommon(config)
           .method(promQuery.httpMethod(), queryEndpoint.params(body: _*))
       case _ =>
-        basicRequest
+        basicRequestCommon(config)
           .contentType(MediaType.ApplicationXWwwFormUrlencoded)
           .method(promQuery.httpMethod(), queryEndpoint)
           .body(body, "utf-8")

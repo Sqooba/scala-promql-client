@@ -1,7 +1,14 @@
 package io.sqooba.oss.promql
 
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.LazyLogging
 import zio.{Has, RLayer, Task, ZLayer}
+
+sealed trait PrometheusClientAuth
+
+case class PrometheusClientAuthBasicCredential(username:String, password: String) extends PrometheusClientAuth
+case class PrometheusClientAuthBasicToken(token:String) extends PrometheusClientAuth
+case class PrometheusClientAuthBearer(bearer:String) extends PrometheusClientAuth
 
 /**
  * @param host  server's hostname or ip
@@ -9,6 +16,7 @@ import zio.{Has, RLayer, Task, ZLayer}
  * @param maxPointsPerTimeseries The maximum number of points a prometheus endpoint can return before we have to split queries
  * @param retryNumber Number of retry to perform in case of a failed query
  * @param parallelRequests Number of requests that can be made in parallel when splitting queries
+ * @param auth Authentication information to connect to Prometheus
  */
 case class PrometheusClientConfig(
   host: String,
@@ -16,10 +24,52 @@ case class PrometheusClientConfig(
   ssl: Boolean,
   maxPointsPerTimeseries: Int,
   retryNumber: Int,
-  parallelRequests: Int
+  parallelRequests: Int,
+  auth: Option[PrometheusClientAuth] = None
 )
 
-object PrometheusClientConfig {
+object PrometheusClientConfig extends LazyLogging {
+
+  private def getSubConfig(config:Config, path:String):Option[Config] =
+    if (config.hasPath(path)) {Some(config.getConfig(path))}
+    else {None}
+
+  def decodeAuthBasicCredential(config:Config):Option[PrometheusClientAuth] =
+    getSubConfig(config, "auth-basic-credentials").map(subConfig =>
+      PrometheusClientAuthBasicCredential(
+        username = subConfig.getString("username"),
+        password = subConfig.getString("password")
+      )
+    )
+
+  def decodeAuthBasicToken(config: Config): Option[PrometheusClientAuth] =
+    getSubConfig(config, "auth-basic-token").map(subConfig =>
+      PrometheusClientAuthBasicToken(
+        token = subConfig.getString("token")
+      )
+    )
+
+  def decodeAuthBearer(config: Config): Option[PrometheusClientAuth] =
+    getSubConfig(config, "auth-bearer").map (subConfig =>
+      PrometheusClientAuthBearer(bearer = subConfig.getString("bearer"))
+    )
+
+  def decodeAuthConfig(config: Config):Option[PrometheusClientAuth] = {
+
+    val foundAuthConfig =
+      decodeAuthBearer(config) ++ decodeAuthBasicToken(config) ++ decodeAuthBasicCredential(config)
+
+    if (foundAuthConfig.size>1) {
+      logger.warn(
+        "Ignoring authentication as you've provided " +
+          f"${foundAuthConfig.size} authentication configurations"
+      )
+      None
+    } else {
+      foundAuthConfig.headOption
+    }
+
+  }
 
   /**
    * Shameful late addition of the SSL support: there might be a more elegant way of
@@ -45,7 +95,8 @@ object PrometheusClientConfig {
         readSslFlag(config),
         config.getInt("maxPointsPerTimeseries"),
         config.getInt("retryNumber"),
-        config.getInt("parallelRequests")
+        config.getInt("parallelRequests"),
+        decodeAuthConfig(config)
       )
     }
 
@@ -57,7 +108,8 @@ object PrometheusClientConfig {
         readSslFlag(config),
         config.getInt("max-points-per-timeseries"),
         config.getInt("retry-number"),
-        config.getInt("parallel-requests")
+        config.getInt("parallel-requests"),
+        decodeAuthConfig(config)
       )
     }
 
